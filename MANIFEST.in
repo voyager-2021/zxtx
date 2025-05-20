@@ -1,0 +1,4 @@
+include README.md LICENSE SPECIFICATION.md pyproject.toml
+recursive-include src *.py
+recursive-include certificates *.pem
+prune examples

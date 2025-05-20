@@ -1,0 +1,45 @@
+name: Python Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up PDM
+        uses: pdm-project/setup-pdm@v4
+
+      - name: Make PDM lock
+        run: pdm lock
+
+      - name: Cache PDM
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pdm
+          key: pdm-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pdm.lock') }}
+          restore-keys: |
+            pdm-${{ runner.os }}-${{ matrix.python-version }}-
+
+      - name: Install dependencies with PDM
+        run: |
+          pdm install
+          pdm install --dev
+
+      - name: Run tests via tox
+        run: pdm run tox

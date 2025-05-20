@@ -1,0 +1,86 @@
+[project]
+dynamic = ["version"]
+name = "zxtx"
+description = "ZXTX file format support."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "voyager-2021", email = "voyager-2019@outlook.com" }
+]
+license = { text = "MIT" }
+keywords = ["compression", "encryption", "file-format", "zxtx", "cryptography"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security :: Cryptography",
+    "Topic :: File Formats",
+]
+
+dependencies = [
+    "cryptography>=45.0.1",
+    "brotli>=1.1.0",
+    "toml>=0.10.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.5",
+    "black>=25.1.0",
+    "mypy>=1.15.0",
+    "isort>=6.0.1",
+    "pydocstyle>=6.3.0",
+    "pylint>=3.3.7",
+    "bandit>=1.8.3",
+    "safety>=3.5.1",
+    "flake8>=7.2.0",
+    "tox>=4.26.0",
+    "types-toml>=0.10.8.20240310",
+]
+opt = [
+    "rich>=14.0.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/voyager-2021/zxtx"
+Documentation = "https://github.com/voyager-2021/zxtx#readme"
+Source = "https://github.com/voyager-2021/zxtx"
+Issues = "https://github.com/voyager-2021/zxtx/issues"
+
+[project.scripts]
+zxtx = "zxtx.cli:main"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm]
+distribution = true
+version = { source = "file", path = "src/zxtx/__package_info__.py" }
+
+[tool.black]
+line-length = 88
+target-version = ['py313']
+
+[tool.mypy]
+mypy_path = "src"
+check_untyped_defs = true
+disallow_any_generics = true
+ignore_missing_imports = true
+no_implicit_optional = true
+show_error_codes = true
+strict_equality = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+no_implicit_reexport = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+lint.select = ["E", "F", "I", "B", "W"]
