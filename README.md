@@ -4,7 +4,7 @@
 
 **ZXTX** is a secure, compressed, and verifiable file format for structured text and binary data. It supports optional encryption, compression, and cryptographic signing, making it ideal for transmitting sensitive files safely.
 
-> Built in Python. CLI powered by `cryptography`.
+> Built in Python. Powered by `cryptography`.
 
 ## Features
 
