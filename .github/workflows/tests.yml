@@ -41,5 +41,10 @@ jobs:
           pdm install
           pdm install --dev
 
+      - name: Run test slow tests with coverage
+        run: |
+          pdm run coverage run -m pytest
+          pdm run coverage report
+
       - name: Run tests via tox
         run: pdm run tox
