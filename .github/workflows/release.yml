@@ -1,0 +1,73 @@
+name: Roll release
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Set up PDM
+        uses: pdm-project/setup-pdm@v4
+
+      - name: Make PDM lock
+        run: pdm lock
+
+      - name: Install dependencies
+        run: pdm install
+
+      - name: Cache PDM
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pdm
+          key: pdm-${{ runner.os }}-${{ hashFiles('pdm.lock') }}
+          restore-keys: |
+            pdm-${{ runner.os }}-
+
+      - name: Run pre-commit
+        run: pdm run pre-commit run --all-files
+
+      - name: Run tests with coverage
+        run: |
+          pdm run coverage run -m pytest -m "not slow"
+          pdm run coverage report
+          pdm run coverage xml
+
+      - uses: actions/checkout@v4
+
+      - name: Get version from __package_info__.py
+        id: get_version
+        run: |
+          VERSION=$(pdm run python3 -c "import zxtx.__package_info__ as pkginfo; print(pkginfo.__version__)")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build package
+        run: pdm build
+
+      - name: Push Git tag
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag ${{ steps.get_version.outputs.version }}
+          git push origin ${{ steps.get_version.outputs.version }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          name: Release ${{ steps.get_version.outputs.version }}
+          generate_release_notes: true
+
+      - name: Publish to PyPI
+        env:
+          PDM_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: pdm publish --username __token__ --password $PDM_PYPI_TOKEN

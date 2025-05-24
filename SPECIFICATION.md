@@ -1,9 +1,9 @@
 # ZXTX File Format Specification
 
-**Version:** 1.0  
-**Status:** Draft  
-**Author:** voyager-2021  
-**Last Updated:** 2025-05-18  
+**Version:** 1.0
+**Status:** Draft
+**Author:** voyager-2021
+**Last Updated:** 2025-05-18
 
 ## Overview
 
