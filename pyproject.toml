@@ -64,6 +64,7 @@ build-backend = "pdm.backend"
 [tool.pdm]
 distribution = true
 version = { source = "file", path = "src/zxtx/__package_info__.py" }
+includes = ["src/zxtx/certificates/**/*"]
 
 [tool.black]
 line-length = 88
