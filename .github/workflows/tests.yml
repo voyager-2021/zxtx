@@ -23,9 +23,6 @@ jobs:
       - name: Set up PDM
         uses: pdm-project/setup-pdm@v4
 
-      - name: Make PDM lock
-        run: pdm lock
-
       - name: Cache PDM
         uses: actions/cache@v4
         with:
@@ -34,11 +31,6 @@ jobs:
           restore-keys: |
             pdm-${{ runner.os }}-${{ matrix.python-version }}-
 
-      - name: Install dependencies with PDM
-        run: |
-          pdm install
-          pdm install --dev
-
       - name: Cache .venv
         uses: actions/cache@v4
         with:
@@ -46,6 +38,15 @@ jobs:
           key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pdm.lock') }}
           restore-keys: |
             venv-${{ runner.os }}-${{ matrix.python-version }}-
+
+      - name: Make PDM lock
+        run: pdm lock
+
+      - name: Install dependencies with PDM
+        run: |
+          pdm install
+          pdm install --dev
+
 
       - name: Run test slow tests with coverage
         run: |
