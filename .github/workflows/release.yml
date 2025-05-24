@@ -52,8 +52,6 @@ jobs:
           pdm run coverage report
           pdm run coverage xml
 
-      - uses: actions/checkout@v4
-
       - name: Get version from __package_info__.py
         id: get_version
         run: |
