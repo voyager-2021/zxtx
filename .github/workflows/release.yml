@@ -68,6 +68,4 @@ jobs:
           generate_release_notes: true
 
       - name: Publish to PyPI
-        env:
-          PDM_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: pdm publish --username __token__ --password $PDM_PYPI_TOKEN
+        run: pdm publish --username __token__ --password ${{ secrets.PYPI_API_TOKEN }}
