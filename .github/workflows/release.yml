@@ -23,7 +23,9 @@ jobs:
         run: pdm lock
 
       - name: Install dependencies
-        run: pdm install
+        run: |
+          pdm install
+          pdm install --dev
 
       - name: Cache PDM
         uses: actions/cache@v4
@@ -35,6 +37,14 @@ jobs:
 
       - name: Run pre-commit
         run: pdm run pre-commit run --all-files
+
+      - name: Cache .venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pdm.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-${{ matrix.python-version }}-
 
       - name: Run tests with coverage
         run: |

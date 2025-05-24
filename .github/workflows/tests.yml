@@ -39,6 +39,14 @@ jobs:
           pdm install
           pdm install --dev
 
+      - name: Cache .venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pdm.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-${{ matrix.python-version }}-
+
       - name: Run test slow tests with coverage
         run: |
           pdm run coverage run -m pytest
