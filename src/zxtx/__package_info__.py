@@ -1,44 +1,60 @@
-import toml
+__version__ = "0.1.0"  # Always hardcode or inject this during build
 
-with open("pyproject.toml", "r") as file:
-    pyproject = toml.load(file)
+# Sensible defaults
+__project_name__ = "Undefined"
+__author__ = "Undefined"
+__email__ = "Undefined"
+__license__ = "Undefined"
+__url__ = "Undefined"
+__documentation__ = "Undefined"
+__repository__ = "Undefined"
+__issues__ = "Undefined"
+__description__ = "Undefined"
+__readme__ = "Undefined"
+__keywords__ = []
+__dependencies__ = []
+__dev_dependencies__ = []
+__python_requires__ = "Undefined"
+__classifiers__ = []
+__build_backend__ = "Undefined"
+__build_requires__ = []
 
-__version__ = "0.1.0"
-__project_name__ = pyproject["project"]["name"]
-__author__ = pyproject["project"]["authors"][0]["name"]
-__email__ = pyproject["project"]["authors"][0]["email"]
-__license__ = pyproject["project"]["license"]["text"]
-__url__ = pyproject["project"]["urls"]["Homepage"]
-__documentation__ = pyproject["project"]["urls"]["Documentation"]
-__repository__ = pyproject["project"]["urls"]["Source"]
-__issues__ = pyproject["project"]["urls"]["Issues"]
-__description__ = pyproject["project"]["description"]
-__readme__ = pyproject["project"]["readme"]
-__keywords__ = pyproject["project"]["keywords"]
-__dependencies__ = pyproject["project"]["dependencies"]
-__dev_dependencies__ = pyproject["project"]["optional-dependencies"]["dev"]
-__python_requires__ = pyproject["project"]["requires-python"]
-__classifiers__ = pyproject["project"]["classifiers"]
-__build_backend__ = pyproject["build-system"]["build-backend"]
-__build_requires__ = pyproject["build-system"]["requires"]
+try:
+    import toml
+    from pathlib import Path
 
-__all__ = [
-    "__version__",
-    "__project_name__",
-    "__author__",
-    "__email__",
-    "__license__",
-    "__url__",
-    "__documentation__",
-    "__repository__",
-    "__issues__",
-    "__description__",
-    "__readme__",
-    "__keywords__",
-    "__dependencies__",
-    "__dev_dependencies__",
-    "__python_requires__",
-    "__classifiers__",
-    "__build_backend__",
-    "__build_requires__",
-]
+    current = Path(__file__).resolve().parent
+    while current != current.parent:
+        pyproject_path = current / "pyproject.toml"
+        if pyproject_path.exists():
+            break
+        current = current.parent
+    else:
+        raise FileNotFoundError("pyproject.toml not found")
+
+    pyproject = toml.load(pyproject_path)
+
+    project = pyproject.get("project", {})
+    __project_name__ = project.get("name", __project_name__)
+    authors = project.get("authors", [{}])
+    __author__ = authors[0].get("name", __author__)
+    __email__ = authors[0].get("email", __email__)
+    __license__ = project.get("license", {}).get("text", __license__)
+    urls = project.get("urls", {})
+    __url__ = urls.get("Homepage", __url__)
+    __documentation__ = urls.get("Documentation", __documentation__)
+    __repository__ = urls.get("Source", __repository__)
+    __issues__ = urls.get("Issues", __issues__)
+    __description__ = project.get("description", __description__)
+    __readme__ = project.get("readme", __readme__)
+    __keywords__ = project.get("keywords", __keywords__)
+    __dependencies__ = project.get("dependencies", __dependencies__)
+    __dev_dependencies__ = project.get("optional-dependencies", {}).get("dev", __dev_dependencies__)
+    __python_requires__ = project.get("requires-python", __python_requires__)
+    __classifiers__ = project.get("classifiers", __classifiers__)
+    build_system = pyproject.get("build-system", {})
+    __build_backend__ = build_system.get("build-backend", __build_backend__)
+    __build_requires__ = build_system.get("requires", __build_requires__)
+except Exception:
+    pass  # Keep defaults
+
