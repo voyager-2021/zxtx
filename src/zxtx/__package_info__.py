@@ -1,4 +1,4 @@
-__version__ = "0.1.0"  # Always hardcode or inject this during build
+__version__ = "0.1.1"  # Always hardcode or inject this during build
 
 # Sensible defaults
 __project_name__ = "Undefined"
