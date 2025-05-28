@@ -22,7 +22,7 @@ ZXTX (Zipped & eXtended Text eXchange) is a file format designed for secure, com
 | Cipher Method ID      | 1            | Enum for cipher/obfuscation algorithm, 0 = none                            |
 | Original Size         | 8            | Original uncompressed text size (uint64)                                   |
 | Compressed Size       | 8            | Compressed data size (uint64)                                              |
-| Timestamp             | 8            | UNIX timestamp (uint64) when file was created                              |
+| Timestamp             | 8            | UNIX timestamp (double) when file was created                              |
 | SHA-256 Hash          | 32           | SHA-256 hash of the original uncompressed text                             |
 | CRC32 Checksum        | 4            | CRC32 checksum of the compressed data                                      |
 | Certificate Length    | 2            | Length in bytes of the certificate field (uint16)                          |

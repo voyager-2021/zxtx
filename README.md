@@ -63,7 +63,7 @@ zxtx dump example.zxtx --public-key pubkey.pem
 
 ## Format Specification
 
-The ZXTX file format is formally documented in [`SPECIFICATION.md`](https://github.com/voyager-2021/zxtx/blob/main/SPECIFICATION.md). It defines:
+The ZXTX file format is formally documented in [`SPECIFICATION.md`](https://github.com/voyager-2021/zxtx/blob/master/SPECIFICATION.md). It defines:
 
 - Magic header
 - Versioning
@@ -90,4 +90,4 @@ See the `zxtx.highlevel` module for full API details.
 
 ## License
 
-#### [`MIT License`](https://github.com/voyager-2021/zxtx/blob/main/LICENSE) – Copyright (c) 2025 voyager-2021 (ZXTX)
+#### [`MIT License`](https://github.com/voyager-2021/zxtx/blob/master/LICENSE) – Copyright (c) 2025 voyager-2021 (ZXTX)
