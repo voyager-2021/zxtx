@@ -57,4 +57,3 @@ try:
     __build_requires__ = build_system.get("requires", __build_requires__)
 except Exception:
     pass  # Keep defaults
-
