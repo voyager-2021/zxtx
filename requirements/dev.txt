@@ -1,0 +1,15 @@
+pytest>=8.3.5
+black>=25.1.0
+mypy>=1.15.0
+isort>=6.0.1
+pydocstyle>=6.3.0
+pylint>=3.3.7
+bandit>=1.8.3
+safety>=3.5.1
+flake8>=7.2.0
+tox>=4.26.0
+coverage>=7.8.1
+pytest-cov>=6.1.1
+pre-commit>=4.2.0
+twine>=6.0.1
+build>=1.2.2.post1

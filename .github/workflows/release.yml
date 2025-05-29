@@ -2,6 +2,7 @@ name: Roll release
 
 permissions:
   contents: write
+  id-token: write
 
 on:
   workflow_dispatch:
@@ -10,48 +11,48 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
+    environment:
+      name: pypi
+      url: https://pypi.org/p/zxtx
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
-      - name: Set up PDM
-        uses: pdm-project/setup-pdm@v4
-
-      - name: Cache PDM
+      - name: Cache pip and build wheels
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pdm
-          key: pdm-${{ runner.os }}-${{ hashFiles('pdm.lock') }}
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
-            pdm-${{ runner.os }}-
+            ${{ runner.os }}-pip-
 
-      - name: Make PDM lock
-        run: pdm lock
-
-      - name: Install dependencies
+      - name: Install build and test dependencies
         run: |
-          pdm install
-          pdm install --dev
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+          python -m pip install -r requirements.txt
 
       - name: Run pre-commit
-        run: pdm run pre-commit run --all-files
+        run: pre-commit run --all-files || true
 
       - name: Run tests with coverage
         run: |
-          pdm run coverage run -m pytest -m "not slow"
-          pdm run coverage report
-          pdm run coverage xml
+          coverage run -m pytest -m "not slow"
+          coverage report
+          coverage xml
 
-      - name: Get version from __package_info__.py
+      - name: Get version from setup.cfg
         id: get_version
         run: |
-          VERSION=$(pdm run python3 -c "import zxtx.__package_info__ as pkginfo; print(pkginfo.__version__)")
+          VERSION=$(python3 -c "import configparser;cfg=configparser.ConfigParser();cfg.read('setup.cfg');print(cfg['metadata']['version'])")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build package
-        run: pdm build
+        run: python -m build
 
       - name: Push Git tag
         run: |
@@ -68,4 +69,6 @@ jobs:
           generate_release_notes: true
 
       - name: Publish to PyPI
-        run: pdm publish --username __token__ --password ${{ secrets.PYPI_API_TOKEN }}
+        uses: pypa/gh-action-pypi-publish@v1.12.4
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}

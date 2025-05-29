@@ -1,8 +1,6 @@
 import datetime
 import os
-import tempfile
 from itertools import product
-from pathlib import Path
 
 import pytest
 from cryptography import x509
@@ -78,9 +76,9 @@ def keypair_and_cert(tmp_path, request):
         .issuer_name(issuer)
         .public_key(public_key)
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.datetime.now(datetime.timezone.utc))
+        .not_valid_before(datetime.datetime.now(datetime.UTC))
         .not_valid_after(
-            datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=3650)
+            datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=3650)
         )
         .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
         .sign(private_key, hashes.SHA256())
@@ -92,9 +90,9 @@ def keypair_and_cert(tmp_path, request):
         else serialization.NoEncryption()
     )
 
-    priv_path = tmp_path / f"private_key.pem"
-    pub_path = tmp_path / f"public_key.pem"
-    cert_path = tmp_path / f"certificate.pem"
+    priv_path = tmp_path / "private_key.pem"
+    pub_path = tmp_path / "public_key.pem"
+    cert_path = tmp_path / "certificate.pem"
 
     priv_path.write_bytes(
         private_key.private_bytes(

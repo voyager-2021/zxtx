@@ -2,23 +2,15 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from cryptography.hazmat.primitives.asymmetric import (dh, dsa, ec, ed448,
-                                                       ed25519, rsa, x448,
-                                                       x25519)
-from cryptography.hazmat.primitives.asymmetric.types import (PrivateKeyTypes,
-                                                             PublicKeyTypes)
+from cryptography.hazmat.primitives.asymmetric.types import (
+    PrivateKeyTypes,
+    PublicKeyTypes,
+)
 
 from zxtx.constants import CIPHER_METHOD, COMPRESSION_METHOD
-from zxtx.decryption import (decrypt_data_aes256_ctr_hmac,
-                             decrypt_data_aes_gcm, decrypt_data_chacha20,
-                             decrypt_key_rsa)
 from zxtx.dtypes import ZXTXBody, ZXTXHeader
-from zxtx.encryption import (encrypt_data_aes256_ctr_hmac,
-                             encrypt_data_aes_gcm, encrypt_data_chacha20,
-                             encrypt_key_rsa)
 from zxtx.parser import parse_zxtx_header, read_zxtx_file
-from zxtx.signer import load_private_key, load_public_key, sign_data
-from zxtx.verifier import verify_signature
+from zxtx.signer import load_private_key, load_public_key
 from zxtx.writer import write_zxtx_file
 
 _open = open
@@ -36,7 +28,7 @@ class ZXTXFileHandle:
         public_key: Optional[PublicKeyTypes | bytes] = None,
         password: Optional[bytes] = None,
         encoding: str = "utf-8",
-    ):
+    ) -> None:
         self._path = Path(path)
         self._cipher = cipher
         self._compression = compression
@@ -68,7 +60,7 @@ class ZXTXFileHandle:
         ):
             self._read()
 
-    def _read(self):
+    def _read(self) -> None:
         if self._closed:
             raise RuntimeError("Cannot read from a closed file")
 
@@ -76,12 +68,19 @@ class ZXTXFileHandle:
             self._raw_data = f.read()
 
         self._header, self._body = parse_zxtx_header(
-            self._raw_data, private_key=self._private_key
+            self._raw_data,
+            private_key=self._private_key,
+            compression_method=(
+                self._compression
+                if self._compression != COMPRESSION_METHOD.NONE
+                else None
+            ),
+            cipher_method=self._cipher if self._cipher != CIPHER_METHOD.NONE else None,
         )
 
         self._data = read_zxtx_file(self._header, self._body, self._private_key)
 
-    def _write_current(self):
+    def _write_current(self) -> None:
         if self._closed:
             raise RuntimeError("Cannot write to a closed file")
 
@@ -99,23 +98,28 @@ class ZXTXFileHandle:
 
         self._read()
 
-    def write(self, text: str):
+    def write(self, text: str) -> None:
+        """Write text to a zxtx file."""
         self._data = text.encode(self._encoding)
         self._write_current()
 
-    def write_bytes(self, data: bytes):
+    def write_bytes(self, data: bytes) -> None:
+        """Write bytes to a zxtx file."""
         self._data = data
         self._write_current()
 
-    def append(self, text: str):
+    def append(self, text: str) -> None:
+        """Append text to a zxtx file."""
         self._data += text.encode(self._encoding)
         self._write_current()
 
-    def append_bytes(self, data: bytes):
+    def append_bytes(self, data: bytes) -> None:
+        """Append bytes to a zxtx file."""
         self._data += data
         self._write_current()
 
     def read(self) -> str:
+        """Read contents of a zxtx file."""
         if self._closed:
             raise RuntimeError("Cannot read from a closed file")
         if self._data == b"":
@@ -123,22 +127,25 @@ class ZXTXFileHandle:
         return self._data.decode(self._encoding)
 
     def read_bytes(self) -> bytes:
+        """Read bytes of a zxtx file."""
         if self._data == b"":
             self._read()
         return self._data
 
     def get_header(self) -> ZXTXHeader:
+        """Get header of a zxtx file."""
         if not self._header:
             self._read()
         return self._header
 
-    def close(self):
+    def close(self) -> None:
+        """Close a zxtx file."""
         self._closed = True
 
     def __enter__(self) -> "ZXTXFileHandle":
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         self.close()
 
         if exc_value:
@@ -164,6 +171,10 @@ def open(
     password: Optional[bytes] = None,
     encoding: str = "utf-8",
 ) -> ZXTXFileHandle:
+    """
+    Opens a ZXTX file with optional decryption, verification, and decompression.
+    """
+
     return ZXTXFileHandle(
         path=path,
         cipher=cipher,

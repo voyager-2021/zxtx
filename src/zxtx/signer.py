@@ -2,8 +2,10 @@ import sys
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, ed25519, padding, rsa
-from cryptography.hazmat.primitives.serialization import (load_pem_private_key,
-                                                          load_pem_public_key)
+from cryptography.hazmat.primitives.serialization import (
+    load_pem_private_key,
+    load_pem_public_key,
+)
 
 
 def sign_data(private_key, data: bytes) -> bytes:
@@ -31,8 +33,7 @@ def load_private_key(pem_bytes: bytes, password=None):
             if sys.version_info >= (3, 11)
             else ...
         )
-        error.args = error.args[1:]
-        error.with_traceback(None)
+
         raise error
 
 

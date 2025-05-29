@@ -6,14 +6,19 @@ import zlib
 import brotli
 
 from zxtx.constants import CIPHER_METHOD, COMPRESSION_METHOD, MAGIC_NUMBER
-from zxtx.decryption import (decrypt_data_aes256_ctr_hmac,
-                             decrypt_data_aes_gcm, decrypt_data_chacha20,
-                             decrypt_key_rsa)
+from zxtx.decryption import (
+    decrypt_data_aes256_ctr_hmac,
+    decrypt_data_aes_gcm,
+    decrypt_data_chacha20,
+    decrypt_key_rsa,
+)
 from zxtx.dtypes import ZXTXBody, ZXTXHeader
-from zxtx.utils import bits_to_bytes
+from zxtx.utils import bits_to_bytes, is_encrypted
 
 
-def parse_zxtx_header(data: bytes, private_key=None) -> tuple[ZXTXHeader, ZXTXBody]:
+def parse_zxtx_header(
+    data: bytes, private_key=None, *, compression_method=None, cipher_method=None
+) -> tuple[ZXTXHeader, ZXTXBody]:
     offset = 0
 
     def read(fmt: str):
@@ -37,8 +42,16 @@ def parse_zxtx_header(data: bytes, private_key=None) -> tuple[ZXTXHeader, ZXTXBo
     uid = data[offset : offset + 16]
     offset += 16
 
-    compression_method = COMPRESSION_METHOD(data[offset])
-    cipher_method = CIPHER_METHOD(data[offset + 1])
+    compression_method = (
+        COMPRESSION_METHOD(data[offset])
+        if compression_method is None
+        else compression_method
+    )
+
+    cipher_method = (
+        CIPHER_METHOD(data[offset + 1]) if cipher_method is None else cipher_method
+    )
+
     offset += 2
 
     original_size = read(">Q")
@@ -120,6 +133,11 @@ def parse_zxtx_header(data: bytes, private_key=None) -> tuple[ZXTXHeader, ZXTXBo
 
 
 def read_zxtx_file(header: ZXTXHeader, body: ZXTXBody, private_key) -> bytes:
+    if is_encrypted(header) and private_key is None:
+        raise ValueError(
+            "File appears to be encrypted, but no private key was provided."
+        )
+
     match header.cipher_method:
         case CIPHER_METHOD.NONE:
             decrypted_data = body.data
@@ -178,6 +196,8 @@ def read_zxtx_file(header: ZXTXHeader, body: ZXTXBody, private_key) -> bytes:
         )
 
     if hashlib.sha256(decompressed).digest() != header.sha256_hash:
-        raise ValueError("SHA-256 hash mismatch: file may be corrupted or tampered")
+        raise ValueError(
+            f"SHA-256 hash mismatch: file may be corrupted or tampered, got '{hashlib.sha256(decompressed).hexdigest()}' but expected '{header.sha256_hash.hex()}'"
+        )
 
     return decompressed

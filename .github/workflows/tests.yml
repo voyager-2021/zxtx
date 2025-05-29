@@ -16,34 +16,27 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Set up PDM
-        uses: pdm-project/setup-pdm@v4
-
-      - name: Cache PDM
+      - name: Cache pip dependencies
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pdm
-          key: pdm-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pdm.lock') }}
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            pdm-${{ runner.os }}-${{ matrix.python-version }}-
+            ${{ runner.os }}-pip-
 
-      - name: Make PDM lock
-        run: pdm lock
-
-      - name: Install dependencies with PDM
+      - name: Install test dependencies
         run: |
-          pdm install
-          pdm install --dev
+          python -m pip install --upgrade pip
+          python -m pip install .[dev]
 
-
-      - name: Run test slow tests with coverage
+      - name: Run slow tests with coverage
         run: |
-          pdm run coverage run -m pytest
-          pdm run coverage report
+          coverage run -m pytest
+          coverage report
 
       - name: Run tests via tox
-        run: pdm run tox
+        run: tox

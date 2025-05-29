@@ -37,9 +37,9 @@ with open("public_key.pem", "wb") as f:
 # 3. Generate a self-signed certificate
 subject = issuer = x509.Name(
     [
-        x509.NameAttribute(NameOID.COUNTRY_NAME, "<COUNTRY_ISO>"),
-        x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "<STATE_OR_COUNTRY>"),
-        x509.NameAttribute(NameOID.LOCALITY_NAME, "<CITY>"),
+        x509.NameAttribute(NameOID.COUNTRY_NAME, "FI"),
+        x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Finland"),
+        x509.NameAttribute(NameOID.LOCALITY_NAME, "Helsinki"),
         x509.NameAttribute(NameOID.ORGANIZATION_NAME, "ZXTX"),
         x509.NameAttribute(NameOID.COMMON_NAME, "ZXTX Signing Key"),
     ]
@@ -51,10 +51,10 @@ cert = (
     .issuer_name(issuer)
     .public_key(private_key.public_key())
     .serial_number(x509.random_serial_number())
-    .not_valid_before(datetime.datetime.utcnow())
+    .not_valid_before(datetime.datetime.now(datetime.UTC))
     .not_valid_after(
         # Valid for 10 years
-        datetime.datetime.utcnow()
+        datetime.datetime.now(datetime.UTC)
         + datetime.timedelta(days=3650)
     )
     .add_extension(

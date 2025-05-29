@@ -6,22 +6,24 @@ import struct
 import time
 import uuid
 import zlib
-from enum import Enum
 from typing import Optional
 
 import brotli
 
 from zxtx.constants import CIPHER_METHOD, COMPRESSION_METHOD, MAGIC_NUMBER
-from zxtx.encryption import (encrypt_data_aes256_ctr_hmac,
-                             encrypt_data_aes_gcm, encrypt_data_chacha20,
-                             encrypt_key_rsa)
+from zxtx.encryption import (
+    encrypt_data_aes256_ctr_hmac,
+    encrypt_data_aes_gcm,
+    encrypt_data_chacha20,
+    encrypt_key_rsa,
+)
 from zxtx.signer import sign_data
 
 
 def write_zxtx_file(
     data: bytes,
-    compression_method: Enum,
-    cipher_method: Enum,
+    compression_method: COMPRESSION_METHOD,
+    cipher_method: CIPHER_METHOD,
     private_key,
     certificate: Optional[bytes] = None,
     public_key=None,

@@ -3,8 +3,7 @@ import sys
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.ciphers.aead import (AESGCM,
-                                                         ChaCha20Poly1305)
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM, ChaCha20Poly1305
 
 
 def decrypt_key_rsa(private_key, encrypted_key: bytes) -> bytes:

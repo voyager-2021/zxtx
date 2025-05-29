@@ -1,4 +1,4 @@
-.PHONY: all install install-dev install-opt sync lock remake-venv test format build publish tox precommit precommit-update clean _clean_wrapper rebase-interactive log delete-branch-remote push-upstream rebase-push stash-apply stash-pop check-dirty
+.PHONY: all install install-dev install-opt remake-venv test format build publish tox precommit precommit-update clean _clean_wrapper rebase-interactive log delete-branch-remote push-upstream rebase-push stash-apply stash-pop check-dirty
 
 ifneq ($(OS),Windows_NT)
 export $(shell cat .env 2>/dev/null | xargs)
@@ -7,58 +7,52 @@ endif
 all: build
 
 install:
-	@pdm install --without dev --without opt
+	@pip install .
 
 install-dev:
-	@pdm install --with dev --without opt
+	@pip install .[dev]
 
 install-opt:
-	@pdm install --with opt --without dev
-
-sync:
-	@pdm sync
-
-lock:
-	@pdm lock --with dev --with opt
+	@pip install .[opt]
 
 remake-venv:
 ifneq ($(OS),Windows_NT)
 	@if [ -d .venv ]; then \
-		pdm venv remove in-project -y; \
+		rm -rf .venv; \
 	fi
-	@pdm venv create
-	@pdm venv activate in-project
+	@python3 -m venv create
+	@source .venv/bin/activate
 else
 	$(error This command is not supported on Windows)
 endif
 
 test:
-	@pdm run coverage run -m pytest -m "not slow"
-	@pdm run coverage report
-	@pdm run coverage html
-	@pdm run coverage xml
+	@coverage run -m pytest -m "not slow"
+	@coverage report
+	@coverage html
+	@coverage xml
 
 tox:
-	@pdm run tox
+	@tox
 
 format:
-	@pdm run black src tests
-	@pdm run isort src tests
+	@black src tests
+	@isort src tests
 
 build:
-	@pdm build
+	@python -m build
 
 publish: build
-	@pdm publish
+	@twine publish
 
 precommit:
 	@$(MAKE) _precommit_wrapper -iks
 
 _precommit_wrapper:
-	@pdm run pre-commit run --all-files
+	@pre-commit run --all-files
 
 precommit-update:
-	@pdm run pre-commit autoupdate --repo https://github.com/pre-commit/pre-commit-hooks
+	@pre-commit autoupdate --repo https://github.com/pre-commit/pre-commit-hooks
 
 clean:
 	@$(MAKE) _clean_wrapper -iks
@@ -71,9 +65,9 @@ _clean_wrapper:
 	rm -r coverage.xml
 	rm -r htmlcov/
 	rm -r .coverage
-	rm -r .pdm-build/
 	rm -r .pytest_cache/
 	rm -r .mypy_cache/
+	rm -r .ruff_cache/
 
 rebase-interactive:
 	@git fetch origin main

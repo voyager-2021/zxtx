@@ -1,4 +1,4 @@
-include README.md LICENSE SPECIFICATION.md pyproject.toml
+include README.md LICENSE SPECIFICATION.md pyproject.toml setup.py setup.cfg
 recursive-include src *.py
 recursive-include certificates *.pem
 prune examples

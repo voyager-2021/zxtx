@@ -7,7 +7,7 @@ from zxtx.writer import write_zxtx_file
 # Load private key
 with open(
     Path(
-        f"~/Documents/.id_rsa/zxtx_root_private_key.pem"
+        "~/Documents/.id_rsa/zxtx_root_private_key.pem"
     ).expanduser(),  # Replace with your own private key
     "rb",
 ) as f:
@@ -27,9 +27,9 @@ with open(
 
 # Write ZXTX file
 zxtx_bytes = write_zxtx_file(
-    data="Hello world from ZXTX!".encode(),
-    compression_method=COMPRESSION_METHOD.LZMA,
-    cipher_method=CIPHER_METHOD.AES256_GCM,
+    data=b"Hello world from ZXTX!",
+    compression_method=COMPRESSION_METHOD.NONE,
+    cipher_method=CIPHER_METHOD.CHACHA20_POLY1305,
     private_key=private_key,
     public_key=public_key,
     certificate=certificate,

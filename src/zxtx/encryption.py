@@ -3,8 +3,7 @@ import os
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.ciphers.aead import (AESGCM,
-                                                         ChaCha20Poly1305)
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM, ChaCha20Poly1305
 
 
 def encrypt_data_aes_gcm(data: bytes, key: bytes) -> tuple[bytes, bytes, bytes]:

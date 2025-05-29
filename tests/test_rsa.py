@@ -1,7 +1,6 @@
 import datetime
 import os
 from itertools import product
-from pathlib import Path
 
 import pytest
 from cryptography import x509
@@ -104,9 +103,9 @@ def keypair_and_cert(tmp_path, request):
         .issuer_name(issuer)
         .public_key(public_key)
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.datetime.now(datetime.timezone.utc))
+        .not_valid_before(datetime.datetime.now(datetime.UTC))
         .not_valid_after(
-            datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=3650)
+            datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=3650)
         )
         .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
         .sign(private_key, hashes.SHA256())
