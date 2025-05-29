@@ -3,7 +3,7 @@
 **Version:** 1.0
 **Status:** Draft
 **Author:** voyager-2021
-**Last Updated:** 2025-05-18
+**Last Updated:** 2025-05-29
 
 ## Overview
 
@@ -19,7 +19,7 @@ ZXTX (Zipped & eXtended Text eXchange) is a file format designed for secure, com
 | Version               | 2            | Format version: 1 byte minor, 1 byte major (e.g. v1.0 = `0x01 0x00`)       |
 | UID                   | 16           | Unique file ID (UUID v4)                                                   |
 | Compression Method ID | 1            | Enum for compression algorithm used                                        |
-| Cipher Method ID      | 1            | Enum for cipher/obfuscation algorithm, 0 = none                            |
+| Cipher Method ID      | 1            | Enum for cipher/obfuscation algorithm used                                 |
 | Original Size         | 8            | Original uncompressed text size (uint64)                                   |
 | Compressed Size       | 8            | Compressed data size (uint64)                                              |
 | Timestamp             | 8            | UNIX timestamp (double) when file was created                              |

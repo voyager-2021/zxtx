@@ -4,7 +4,7 @@ ZXTX File Format Specification
 **Version:** 1.0  
 **Status:** Draft  
 **Author:** voyager-2021  
-**Last Updated:** 2025-05-18
+**Last Updated:** 2025-05-29
 
 Overview
 --------
@@ -28,7 +28,7 @@ A ``.zxtx`` file consists of the following sections in sequence:
 +-------+-----------------------+--------------+----------------------------------------------------------------------------+
 | CMPID | Compression Method ID | 1            | Enum for compression algorithm used                                        |
 +-------+-----------------------+--------------+----------------------------------------------------------------------------+
-| CIPID | Cipher Method ID      | 1            | Enum for cipher/obfuscation algorithm, 0 = none                            |
+| CIPID | Cipher Method ID      | 1            | Enum for cipher/obfuscation algorithm used                                 |
 +-------+-----------------------+--------------+----------------------------------------------------------------------------+
 | OSIZE | Original Size         | 8            | Original uncompressed text size (uint64)                                   |
 +-------+-----------------------+--------------+----------------------------------------------------------------------------+
