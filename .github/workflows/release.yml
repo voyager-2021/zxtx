@@ -30,18 +30,23 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: Install build and test dependencies
+      - name: Create and activate venv
         run: |
+          python -m venv .venv
+          source .venv/bin/activate
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
           python -m pip install -r requirements.txt
           python -m pip install .
 
       - name: Run pre-commit
-        run: pre-commit run --all-files || true
+        run: |
+          source .venv/bin/activate
+          pre-commit run --all-files || true
 
       - name: Run tests with coverage
         run: |
+          source .venv/bin/activate
           PYTHONPATH=src coverage run -m pytest -m "not slow"
           coverage report
           coverage xml
@@ -49,11 +54,14 @@ jobs:
       - name: Get version from setup.cfg
         id: get_version
         run: |
+          source .venv/bin/activate
           VERSION=$(python3 -c "import configparser;cfg=configparser.ConfigParser();cfg.read('setup.cfg');print(cfg['metadata']['version'])")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build package
-        run: python -m build
+        run: |
+          python -m build
+          source .venv/bin/activate
 
       - name: Push Git tag
         run: |

@@ -28,8 +28,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: Install test dependencies
+      - name: Create and activate venv
         run: |
+          python -m venv .venv
+          source .venv/bin/activate
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
           python -m pip install -r requirements.txt
@@ -37,8 +39,11 @@ jobs:
 
       - name: Run slow tests with coverage
         run: |
+          source .venv/bin/activate
           PYTHONPATH=src coverage run -m pytest
           coverage report
 
       - name: Run tests via tox
-        run: tox
+        run: |
+          source .venv/bin/activate
+          tox
