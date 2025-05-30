@@ -37,7 +37,7 @@ jobs:
 
       - name: Run slow tests with coverage
         run: |
-          coverage run -m pytest
+          PYTHONPATH=src coverage run -m pytest
           coverage report
 
       - name: Run tests via tox
