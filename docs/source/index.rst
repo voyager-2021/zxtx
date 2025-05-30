@@ -6,5 +6,6 @@ ZXTX's Documentation
    :caption: Contents:
 
    specification
+   usage
    api
    modules
