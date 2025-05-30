@@ -3,6 +3,7 @@ import sys
 import re
 from pathlib import Path
 from typing import Optional
+from importlib.metadata import version
 
 from zxtx.constants import CIPHER_METHOD, COMPRESSION_METHOD
 from zxtx.dtypes import ZXTXBody, ZXTXData, ZXTXHeader
@@ -156,28 +157,28 @@ def dump_cmd(args):
 
 def add_common_options(p):
     p.add_argument(
-        "--cipher",
+        "-c", "--cipher",
         type=int,
         default=0,
         choices=[c.value for c in CIPHER_METHOD],
         help="Cipher method (int).",
     )
     p.add_argument(
-        "--compression",
+        "-z", "--compression",
         type=int,
         default=0,
         choices=[c.value for c in COMPRESSION_METHOD],
         help="Compression method (int).",
     )
     p.add_argument(
-        "--password",
+        "-p", "--password",
         type=str,
         help="Password to decrypt private key (if needed).",
     )
-    p.add_argument("--public-key", type=str, help="Path to public key file.")
-    p.add_argument("--private-key", type=str, help="Path to private key file.")
-    p.add_argument("--certificate", type=str, help="Path to certificate file.")
-
+    p.add_argument("-k", "--public-key", type=str, help="Path to public key file.")
+    p.add_argument("-u", "--private-key", type=str, help="Path to private key file.")
+    p.add_argument("-C", "--certificate", type=str, help="Path to certificate file.")
+    p.add_argument("-V", "--version", action="store_true", help="Print version and exit")
 
 def main():
     parser = argparse.ArgumentParser(description="ZXTX CLI")
@@ -206,6 +207,11 @@ def main():
     dump_parser.set_defaults(func=dump_cmd)
 
     args = parser.parse_args()
+
+    if args.version:
+        print(version("zxtx"))
+        sys.exit(0)
+
     args.func(args)
 
 
