@@ -60,8 +60,8 @@ jobs:
 
       - name: Build package
         run: |
-          python -m build
           source .venv/bin/activate
+          python -m build
 
       - name: Push Git tag
         run: |
