@@ -1,8 +1,8 @@
-from zxtx.dtypes import ZXTXHeader
-from zxtx.constants import CIPHER_METHOD
 import re
 import sys
 
+from zxtx.constants import CIPHER_METHOD
+from zxtx.dtypes import ZXTXHeader
 
 _print = print
 

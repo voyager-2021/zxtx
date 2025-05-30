@@ -1,9 +1,9 @@
 import argparse
-import sys
 import re
+import sys
+from importlib.metadata import version
 from pathlib import Path
 from typing import Optional
-from importlib.metadata import version
 
 from zxtx.constants import CIPHER_METHOD, COMPRESSION_METHOD
 from zxtx.dtypes import ZXTXBody, ZXTXData, ZXTXHeader
@@ -157,32 +157,51 @@ def dump_cmd(args):
 
 def add_common_options(p):
     p.add_argument(
-        "-c", "--cipher",
+        "-c",
+        "--cipher",
         type=int,
         default=0,
         choices=[c.value for c in CIPHER_METHOD],
         help="Cipher method (int).",
     )
     p.add_argument(
-        "-z", "--compression",
+        "-z",
+        "--compression",
         type=int,
         default=0,
         choices=[c.value for c in COMPRESSION_METHOD],
         help="Compression method (int).",
     )
     p.add_argument(
-        "-p", "--password",
+        "-p",
+        "--password",
         type=str,
         help="Password to decrypt private key (if needed).",
     )
     p.add_argument("-k", "--public-key", type=str, help="Path to public key file.")
     p.add_argument("-u", "--private-key", type=str, help="Path to private key file.")
     p.add_argument("-C", "--certificate", type=str, help="Path to certificate file.")
-    p.add_argument("-V", "--version", action="store_true", help="Print version and exit")
+
+    p.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=f"zxtx {version('zxtx')}",
+        help="Print version and exit",
+    )
+
 
 def main():
     parser = argparse.ArgumentParser(description="ZXTX CLI")
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers = parser.add_subparsers(dest="command")
+
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=f"zxtx {version('zxtx')}",
+        help="Print version and exit",
+    )
 
     write_parser = subparsers.add_parser("write", help="Write a ZXTX file.")
     write_parser.add_argument("input_path", type=Path, help="Input file path.")
@@ -208,9 +227,9 @@ def main():
 
     args = parser.parse_args()
 
-    if args.version:
-        print(version("zxtx"))
-        sys.exit(0)
+    if args.command is None:
+        parser.print_help()
+        sys.exit(1)
 
     args.func(args)
 

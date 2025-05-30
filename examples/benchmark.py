@@ -30,7 +30,9 @@ input_file.write_text("This is a benchmark test file.\n" * 1000)
 # Benchmark function
 def benchmark_command(cmd):
     start = time.perf_counter()
-    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(
+        cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False
+    )
     end = time.perf_counter()
     return end - start
 

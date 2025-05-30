@@ -1,9 +1,9 @@
 ZXTX File Format Specification
 ==============================
 
-**Version:** 1.0  
-**Status:** Draft  
-**Author:** voyager-2021  
+**Version:** 1.0
+**Status:** Draft
+**Author:** voyager-2021
 **Last Updated:** 2025-05-29
 
 Overview
@@ -43,7 +43,7 @@ A ``.zxtx`` file consists of the following sections in sequence:
 | CLEN  | Certificate Length    | 2            | Length in bytes of the certificate field (uint16)                          |
 +-------+-----------------------+--------------+----------------------------------------------------------------------------+
 | CERT  | Certificate Data      | Variable     | X.509 for verifying signer                                                 |
-+-------+-----------------------+--------------+----------------------------------------------------------------------------+   
++-------+-----------------------+--------------+----------------------------------------------------------------------------+
 | SLEN  | Signature Length      | 2            | Length in bytes of the digital signature (uint16)                          |
 +-------+-----------------------+--------------+----------------------------------------------------------------------------+
 | SIGN  | Signature             | Variable     | Signature over header + all fields except compressed data for authenticity |
