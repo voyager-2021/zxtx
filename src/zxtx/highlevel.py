@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Self
 
 from cryptography.hazmat.primitives.asymmetric.types import (
     PrivateKeyTypes,
@@ -142,7 +142,7 @@ class ZXTXFileHandle:
         """Close a zxtx file."""
         self._closed = True
 
-    def __enter__(self) -> "ZXTXFileHandle":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
