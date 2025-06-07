@@ -1,5 +1,6 @@
 import datetime
 import os
+import sys
 from itertools import product
 
 import pytest
@@ -12,7 +13,6 @@ from zxtx.constants import CIPHER_METHOD, COMPRESSION_METHOD
 from zxtx.parser import parse_zxtx_header, read_zxtx_file
 from zxtx.signer import load_private_key, load_public_key
 from zxtx.writer import write_zxtx_file
-import sys
 
 _py310 = sys.version_info.major == 3 and sys.version_info.minor == 10
 

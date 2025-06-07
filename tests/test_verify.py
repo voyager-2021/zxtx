@@ -1,5 +1,6 @@
 import datetime
 import os
+import sys
 from itertools import product
 
 import pytest
@@ -10,7 +11,6 @@ from cryptography.x509.oid import NameOID
 
 from zxtx.signer import load_private_key, sign_data
 from zxtx.verifier import verify_signature
-import sys
 
 _py310 = sys.version_info.major == 3 and sys.version_info.minor == 10
 

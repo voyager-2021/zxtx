@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import Optional, Self
+from typing import Optional
 
 from cryptography.hazmat.primitives.asymmetric.types import (
     PrivateKeyTypes,
@@ -12,6 +12,13 @@ from zxtx.dtypes import ZXTXBody, ZXTXHeader
 from zxtx.parser import parse_zxtx_header, read_zxtx_file
 from zxtx.signer import load_private_key, load_public_key
 from zxtx.writer import write_zxtx_file
+
+_py310 = sys.version_info.major == 3 and sys.version_info.minor == 10
+
+if _py310:
+    Self = "ZXTXFileHandle"
+else:
+    from typing import Self
 
 _open = open
 
@@ -142,7 +149,7 @@ class ZXTXFileHandle:
         """Close a zxtx file."""
         self._closed = True
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> Self:  # type: ignore
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:

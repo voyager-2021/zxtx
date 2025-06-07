@@ -1,4 +1,5 @@
 import datetime
+import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -11,7 +12,6 @@ from cryptography.x509.oid import NameOID
 from zxtx import open as zxtx_open
 from zxtx.constants import CIPHER_METHOD, COMPRESSION_METHOD
 from zxtx.signer import load_private_key, load_public_key
-import sys
 
 _py310 = sys.version_info.major == 3 and sys.version_info.minor == 10
 
