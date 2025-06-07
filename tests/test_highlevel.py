@@ -11,6 +11,9 @@ from cryptography.x509.oid import NameOID
 from zxtx import open as zxtx_open
 from zxtx.constants import CIPHER_METHOD, COMPRESSION_METHOD
 from zxtx.signer import load_private_key, load_public_key
+import sys
+
+_py310 = sys.version_info.major == 3 and sys.version_info.minor == 10
 
 
 @pytest.fixture
@@ -54,9 +57,12 @@ def rsa_keys(tmp_path):
         .issuer_name(issuer)
         .public_key(public_key)
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.datetime.now(datetime.UTC))
+        .not_valid_before(
+            datetime.datetime.now(datetime.UTC if not _py310 else datetime.timezone.utc)
+        )
         .not_valid_after(
-            datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=3650)
+            datetime.datetime.now(datetime.UTC if not _py310 else datetime.timezone.utc)
+            + datetime.timedelta(days=3650)
         )
         .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
         .sign(private_key, hashes.SHA256())
