@@ -110,6 +110,11 @@ jobs:
             dist/*.tar.gz
             dist/*.whl
 
+      - name: Move signatures to separate directory
+        run: |
+          mkdir -p dist/signatures
+          mv dist/*.sigstore.json dist/signatures/ || true
+
       - name: Push Git tag
         run: |
           git config user.name "github-actions"
@@ -124,7 +129,9 @@ jobs:
           name: Release ${{ steps.get_version.outputs.version }}
           generate_release_notes: true
           files: |
-            dist/*
+            dist/*.tar.gz
+            dist/*.whl
+            dist/signatures/*.sigstore.json
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@v1.14.0
