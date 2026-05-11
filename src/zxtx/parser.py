@@ -127,7 +127,11 @@ def parse_zxtx_header(
             signature=signature,
         ),
         ZXTXBody(
-            data=encrypted_blob, nonce=nonce, encrypted_key=encrypted_key, tag=tag
+            data=encrypted_blob,
+            nonce=nonce,
+            encrypted_key=encrypted_key,
+            tag=tag,
+            encrypted_payload=compressed_data,
         ),
     )
 

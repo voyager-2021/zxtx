@@ -103,8 +103,9 @@ def write_zxtx_file(
     header += struct.pack(">H", len(certificate))
     header += certificate
 
-    # Sign the header
-    signature = sign_data(private_key, bytes(header))
+    # Sign the header + encrypted data (authenticates both metadata and payload)
+    data_to_sign = bytes(header) + compressed_final
+    signature = sign_data(private_key, data_to_sign)
     header += struct.pack(">H", len(signature))
     header += signature
 

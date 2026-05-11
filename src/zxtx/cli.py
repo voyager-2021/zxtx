@@ -215,10 +215,20 @@ def read_cmd(args):
 
             # Verify signature if requested
             if args.verify:
+                trusted_cert = get_bytes(args.certificate)
                 if not verify_signature(
-                    header.certificate, bytes(header), header.signature
+                    trusted_cert,
+                    header.certificate,
+                    header.serialize_for_signature(),
+                    body.encrypted_payload,
+                    header.signature,
                 ):
                     error("Signature verification failed")
+                    note("This may be caused by the following reasons:")
+                    note("  - The file does not have a signature.")
+                    note("  - The provided certificate is incorrect or invalid,")
+                    note("    or no certificate was provided at all.")
+                    note("  - The file or it's signature is invalid.")
                     sys.exit(1)
                 note("Signature verified successfully")
         else:
@@ -236,10 +246,21 @@ def read_cmd(args):
                 # Verify signature if requested
                 if args.verify:
                     header = file._header
+                    body = file._body
+                    trusted_cert = get_bytes(args.certificate)
                     if not verify_signature(
-                        header.certificate, header.signature_data, header.signature
+                        trusted_cert,
+                        header.certificate,
+                        header.serialize_for_signature(),
+                        body.encrypted_payload,
+                        header.signature,
                     ):
                         error("Signature verification failed")
+                        note("This may be caused by the following reasons:")
+                        note("  - The file does not have a signature.")
+                        note("  - The provided certificate is incorrect or invalid,")
+                        note("    or no certificate was provided at all.")
+                        note("  - The file or it's signature is invalid.")
                         sys.exit(1)
                     note("Signature verified successfully")
 
@@ -384,7 +405,7 @@ def main():
     read_parser.add_argument(
         "--verify",
         action="store_true",
-        help="Verify signature after reading.",
+        help="Verify signature after reading (requires -C/--certificate).",
     )
     add_common_options(read_parser)
     read_parser.set_defaults(func=read_cmd)

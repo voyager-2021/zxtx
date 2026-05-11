@@ -123,9 +123,11 @@ def test_sign_and_verify_success(keypair_and_cert):
     private_key = load_private_key(priv_path.read_bytes(), password=password)
     certificate = cert_path.read_bytes()
 
-    data = b"Important test data to sign"
-    signature = sign_data(private_key, data)
-    assert verify_signature(certificate, data, signature)
+    header_bytes = b"header data"
+    encrypted_payload = b"encrypted_session_key + nonce + ciphertext + tag"
+    data_to_sign = header_bytes + encrypted_payload
+    signature = sign_data(private_key, data_to_sign)
+    assert verify_signature(certificate, certificate, header_bytes, encrypted_payload, signature)
 
 
 def test_verify_fails_on_modified_data(keypair_and_cert):
@@ -133,18 +135,73 @@ def test_verify_fails_on_modified_data(keypair_and_cert):
     private_key = load_private_key(priv_path.read_bytes(), password=password)
     certificate = cert_path.read_bytes()
 
-    data = b"Important test data to sign"
-    signature = sign_data(private_key, data)
-    tampered_data = data + b"tampered"
+    header_bytes = b"header data"
+    encrypted_payload = b"encrypted_session_key + nonce + ciphertext + tag"
+    data_to_sign = header_bytes + encrypted_payload
+    signature = sign_data(private_key, data_to_sign)
 
-    assert not verify_signature(certificate, tampered_data, signature)
+    # Tamper with the encrypted payload
+    tampered_payload = b"tampered_session_key + nonce + ciphertext + tag"
+
+    assert not verify_signature(certificate, certificate, header_bytes, tampered_payload, signature)
 
 
 def test_verify_fails_on_wrong_signature(keypair_and_cert):
     _, _, _, cert_path, _ = keypair_and_cert
     certificate = cert_path.read_bytes()
 
-    data = b"Important test data to sign"
+    header_bytes = b"header data"
+    encrypted_payload = b"encrypted_session_key + nonce + ciphertext + tag"
     signature = b"not-a-valid-signature"
 
-    assert not verify_signature(certificate, data, signature)
+    assert not verify_signature(certificate, certificate, header_bytes, encrypted_payload, signature)
+
+
+def test_verify_fails_on_certificate_mismatch(keypair_and_cert, tmp_path):
+    """Test that verification fails if embedded cert doesn't match trusted cert."""
+    _, priv_path, _, cert_path, password = keypair_and_cert
+    private_key = load_private_key(priv_path.read_bytes(), password=password)
+    trusted_certificate = cert_path.read_bytes()
+
+    # Generate a different certificate
+    different_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    different_public_key = different_key.public_key()
+
+    subject = issuer = x509.Name(
+        [
+            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Attacker"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "Attacker Key"),
+        ]
+    )
+
+    embedded_cert = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(issuer)
+        .public_key(different_public_key)
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(
+            datetime.datetime.now(datetime.UTC if not _py310 else datetime.timezone.utc)
+        )
+        .not_valid_after(
+            datetime.datetime.now(datetime.UTC if not _py310 else datetime.timezone.utc)
+            + datetime.timedelta(days=3650)
+        )
+        .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+        .sign(different_key, hashes.SHA256())
+    )
+
+    header_bytes = b"header data"
+    encrypted_payload = b"encrypted_session_key + nonce + ciphertext + tag"
+    data_to_sign = header_bytes + encrypted_payload
+    signature = sign_data(private_key, data_to_sign)
+
+    # Should fail because embedded cert doesn't match trusted cert
+    assert not verify_signature(
+        trusted_certificate,
+        embedded_cert.public_bytes(serialization.Encoding.PEM),
+        header_bytes,
+        encrypted_payload,
+        signature,
+    )
