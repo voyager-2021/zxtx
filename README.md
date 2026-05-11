@@ -20,10 +20,16 @@
 pip install zxtx
 ```
 
-Or with [PDM](https://pdm.fming.dev):
+Or with [uv](https://github.com/astral-sh/uv):
 
 ```bash
-pdm add zxtx
+uv add zxtx
+```
+
+Or just to test it out:
+
+```bash
+uvx zxtx --help
 ```
 
 ## Usage
@@ -31,19 +37,19 @@ pdm add zxtx
 ### Writing a ZXTX file
 
 ```bash
-zxtx write input.txt output.zxtx --cipher aes256_gcm --compression zlib --private-key mykey.pem --certificate mycert.pem
+zxtx write input.txt output.zxtx --cipher 1 --compression 1 -u private_key.pem -k public_key.pem -C certificate.pem
 ```
 
 ### Reading a ZXTX file
 
 ```bash
-zxtx read example.zxtx output.txt --private-key mykey.pem --public-key pubkey.pem
+zxtx read example.zxtx output.txt -u private_key.pem -k public_key.pem -C certificate.pem --verify
 ```
 
 ### Dumping metadata
 
 ```bash
-zxtx dump example.zxtx --public-key pubkey.pem
+zxtx dump example.zxtx -u private_key.pem -k public_key.pem -C certificate.pem
 ```
 
 ### Streaming (stdin/stdout)
@@ -52,13 +58,13 @@ ZXTX supports streaming via `-` for stdin/stdout, enabling pipe chains:
 
 ```bash
 # Encrypt from stdin, write to file
-echo "secret data" | zxtx write - output.zxtx --cipher aes256_gcm
+echo "secret data" | zxtx write - output.zxtx --cipher 1
 
 # Read from file, write to stdout
 zxtx read input.zxtx - > output.txt
 
 # Full pipe chain: encrypt, then decrypt
-cat data.txt | zxtx write - - --cipher aes256_gcm | zxtx read - - > decrypted.txt
+cat data.txt | zxtx write - - --cipher 1 | zxtx read - - > decrypted.txt
 ```
 
 ### Signature Verification
@@ -92,15 +98,16 @@ zxtx write largefile.bin output.zxtx --compression lzma
 ## Supported Methods
 
 ### Cipher Methods
-- `none`
-- `aes256_gcm`
-- `chacha20_poly1305`
+- 0: `none`
+- 1: `aes256_gcm`
+- 2: `chacha20_poly1305`
+- 3: `aes256_ctr_hmac`
 
 ### Compression Methods
-- `none`
-- `zlib`
-- `lzma`
-- `brotli`
+- 0: `none`
+- 1: `zlib`
+- 2: `lzma`
+- 3: `brotli`
 
 ## Format Specification
 
@@ -177,4 +184,4 @@ See the `zxtx.highlevel` module for full API details.
 
 ## License
 
-#### [`MIT License`](https://github.com/voyager-2021/zxtx/blob/master/LICENSE) – Copyright (c) 2025 voyager-2021 (ZXTX)
+#### [`MIT License`](https://github.com/voyager-2021/zxtx/blob/master/LICENSE) – Copyright (c) 2025-2026 voyager-2021 (ZXTX)
