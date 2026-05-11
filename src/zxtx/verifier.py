@@ -3,8 +3,13 @@ from cryptography.hazmat.primitives.asymmetric import ec, ed25519, padding, rsa
 from cryptography.x509 import load_pem_x509_certificate
 
 
-def verify_signature(cert_bytes: bytes, data: bytes, signature: bytes) -> bool:
-    cert = load_pem_x509_certificate(cert_bytes)
+def verify_signature(cert_bytes: bytes | None, data: bytes, signature: bytes) -> bool:
+    if cert_bytes is None or len(cert_bytes) == 0:
+        return False
+    try:
+        cert = load_pem_x509_certificate(cert_bytes)
+    except Exception:
+        return False
     public_key = cert.public_key()
 
     try:

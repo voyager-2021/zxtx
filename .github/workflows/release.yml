@@ -3,24 +3,24 @@ name: Roll release
 permissions:
   contents: write
   id-token: write
+  attestations: write
 
 on:
   workflow_dispatch:
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
-
-    environment:
-      name: pypi
-      url: https://pypi.org/p/zxtx
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: ${{ matrix.python-version }}
 
       - name: Cache pip and build wheels
         uses: actions/cache@v4
@@ -51,6 +51,39 @@ jobs:
           coverage report
           coverage xml
 
+      - name: Build wheels
+        run: |
+          source .venv/bin/activate
+          python -m build --wheel
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.python-version }}
+          path: dist/*.whl
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/zxtx
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Create and activate venv
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install build
+
       - name: Get version from setup.cfg
         id: get_version
         run: |
@@ -58,10 +91,24 @@ jobs:
           VERSION=$(python3 -c "import configparser;cfg=configparser.ConfigParser();cfg.read('setup.cfg');print(cfg['metadata']['version'])")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Build package
+      - name: Download all wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist/
+
+      - name: Build source distribution
         run: |
           source .venv/bin/activate
-          python -m build
+          python -m build --sdist
+
+      - name: Sign packages
+        uses: sigstore/gh-action-sigstore-python@v2.1.1
+        with:
+          inputs: >-
+            dist/*.tar.gz
+            dist/*.whl
 
       - name: Push Git tag
         run: |
@@ -76,6 +123,11 @@ jobs:
           tag_name: ${{ steps.get_version.outputs.version }}
           name: Release ${{ steps.get_version.outputs.version }}
           generate_release_notes: true
+          files: |
+            dist/*
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@v1.12.4
+        with:
+          attestations: true
+          packages-dir: dist/

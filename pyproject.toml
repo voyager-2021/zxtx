@@ -22,7 +22,7 @@ no_implicit_reexport = true
 
 [tool.ruff]
 line-length = 88
-target-version = "py313"
+target-version = "py314"
 lint.select = [
     "E",    # pycodestyle errors
     "F",    # pyflakes

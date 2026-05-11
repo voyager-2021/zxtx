@@ -14,9 +14,9 @@ def sign_data(private_key, data: bytes) -> bytes:
     elif isinstance(private_key, ed25519.Ed25519PrivateKey):
         signature = private_key.sign(data)
     elif isinstance(private_key, rsa.RSAPrivateKey):
-        return private_key.sign(data, padding.PKCS1v15(), hashes.SHA256())
+        signature = private_key.sign(data, padding.PKCS1v15(), hashes.SHA256())
     elif private_key is None:
-        return b""
+        signature = b""
     else:
         raise TypeError("Unsupported private key type", private_key)
     return signature

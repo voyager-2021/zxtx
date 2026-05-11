@@ -6,7 +6,6 @@ import struct
 import time
 import uuid
 import zlib
-from typing import Optional
 
 import brotli
 
@@ -25,7 +24,7 @@ def write_zxtx_file(
     compression_method: COMPRESSION_METHOD,
     cipher_method: CIPHER_METHOD,
     private_key,
-    certificate: Optional[bytes] = None,
+    certificate: bytes | None = None,
     public_key=None,
     version=(1, 0),
 ) -> bytes:
@@ -69,6 +68,9 @@ def write_zxtx_file(
         case CIPHER_METHOD.AES256_CTR_HMAC:
             if public_key is None:
                 raise ValueError("Public key required for encryption")
+
+            if public_key.key_size < 2048:
+                raise ValueError("RSA key size must be at least 2048 bits")
 
             session_key = os.urandom(64)  # 32 bytes AES-CTR + 32 bytes HMAC
             encrypted_data, nonce, tag = encrypt_data_aes256_ctr_hmac(

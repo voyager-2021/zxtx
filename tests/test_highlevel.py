@@ -26,7 +26,7 @@ def temp_dir():
 def rsa_keys(tmp_path):
     private_key = rsa.generate_private_key(
         public_exponent=65537,
-        key_size=1024,
+        key_size=2048,
     )
     public_key = private_key.public_key()
 
@@ -97,8 +97,7 @@ def rsa_keys(tmp_path):
         (CIPHER_METHOD.NONE, COMPRESSION_METHOD.NONE),
         (CIPHER_METHOD.AES256_GCM, COMPRESSION_METHOD.NONE),
         (CIPHER_METHOD.CHACHA20_POLY1305, COMPRESSION_METHOD.NONE),
-        # (CIPHER_METHOD.AES256_CTR_HMAC, COMPRESSION_METHOD.NONE),
-        # FIXME: results in error. why? no fucking idea.
+        (CIPHER_METHOD.AES256_CTR_HMAC, COMPRESSION_METHOD.NONE),
         (CIPHER_METHOD.NONE, COMPRESSION_METHOD.ZLIB),
     ],
 )

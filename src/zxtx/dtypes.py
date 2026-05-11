@@ -1,6 +1,5 @@
 import datetime as dt
 from dataclasses import dataclass
-from typing import Optional
 
 from zxtx.constants import CIPHER_METHOD, COMPRESSION_METHOD
 
@@ -18,7 +17,7 @@ class ZXTXHeader:
     sha256_hash: bytes
     crc32: int
     signature: bytes
-    certificate: Optional[bytes]
+    certificate: bytes | None
 
     def creation_time(self) -> dt.datetime:
         return dt.datetime.fromtimestamp(self.timestamp)
@@ -27,9 +26,9 @@ class ZXTXHeader:
 @dataclass
 class ZXTXBody:
     data: bytes
-    nonce: Optional[bytes]
-    encrypted_key: Optional[bytes]
-    tag: Optional[bytes]
+    nonce: bytes | None
+    encrypted_key: bytes | None
+    tag: bytes | None
 
 
 @dataclass
