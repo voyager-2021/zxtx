@@ -1,17 +1,17 @@
 name: Roll release
 
-permissions:
-  contents: write
-  id-token: write
-  attestations: write
-
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  build:
+  test:
+    name: Test on Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
@@ -21,50 +21,68 @@ jobs:
       - uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
 
-      - name: Cache pip and build wheels
-        uses: actions/cache@v5.0.5
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Create and activate venv
+      - name: Install dependencies
         run: |
-          python -m venv .venv
-          source .venv/bin/activate
           python -m pip install --upgrade pip
-          python -m pip install -r requirements-dev.txt
-          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-dev.txt -r requirements.txt
           python -m pip install .
 
       - name: Run pre-commit
-        run: |
-          source .venv/bin/activate
-          pre-commit run --all-files || true
+        run: pre-commit run --all-files
 
       - name: Run tests with coverage
         run: |
-          source .venv/bin/activate
-          PYTHONPATH=src coverage run -m pytest -m "not slow"
-          coverage report
-          coverage xml
+          PYTHONPATH=src python -m coverage run -m pytest -m "not slow"
+          python -m coverage report
+          python -m coverage xml
 
-      - name: Build wheels
-        run: |
-          source .venv/bin/activate
-          python -m build --wheel
+  build:
+    name: Build release artifacts
+    needs: test
+    runs-on: ubuntu-latest
 
-      - name: Upload wheels
-        uses: actions/upload-artifact@v7.0.1
+    steps:
+      - uses: actions/checkout@v6.0.2
         with:
-          name: wheels-${{ matrix.python-version }}
-          path: dist/*.whl
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6.2.0
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip build
+
+      - name: Build distributions
+        run: |
+          rm -rf dist
+          python -m build --sdist --wheel --outdir dist
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: dist
+          path: dist/*
+          if-no-files-found: error
 
   release:
+    name: Create release and publish
     needs: build
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      id-token: write
 
     environment:
       name: pypi
@@ -72,66 +90,60 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6.0.2
-
-      - uses: actions/setup-python@v6.2.0
         with:
-          python-version: '3.14'
-
-      - name: Create and activate venv
-        run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          python -m pip install --upgrade pip
-          python -m pip install build
+          fetch-depth: 0
 
       - name: Get version from setup.cfg
-        id: get_version
+        id: version
         run: |
-          source .venv/bin/activate
-          VERSION=$(python3 -c "import configparser;cfg=configparser.ConfigParser();cfg.read('setup.cfg');print(cfg['metadata']['version'])")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          VERSION="$(python3 -c 'import configparser; cfg = configparser.ConfigParser(); cfg.read("setup.cfg"); print(cfg["metadata"]["version"])')"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Download all wheels
+      - name: Download distributions
         uses: actions/download-artifact@v8.0.1
         with:
-          pattern: wheels-*
-          merge-multiple: true
-          path: dist/
+          name: dist
+          path: dist
 
-      - name: Build source distribution
-        run: |
-          source .venv/bin/activate
-          python -m build --sdist
-
-      - name: Sign packages
+      - name: Sign distributions
         uses: sigstore/gh-action-sigstore-python@v3.3.0
         with:
-          inputs: >-
+          inputs: |
             dist/*.tar.gz
             dist/*.whl
 
-      - name: Move signatures to separate directory
+      - name: Move signatures outside dist
         run: |
-          mkdir -p dist/signatures
-          mv dist/*.sigstore.json dist/signatures/ || true
+          set -eu
+          mkdir -p release-signatures
+          find dist -maxdepth 1 -name '*.sigstore.json' -exec mv {} release-signatures/ \;
 
-      - name: Push Git tag
+      - name: Push Git tag if missing
         run: |
+          set -eu
+          TAG="${{ steps.version.outputs.version }}"
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git tag ${{ steps.get_version.outputs.version }}
-          git push origin ${{ steps.get_version.outputs.version }}
+
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "Tag $TAG already exists."
+          else
+            git tag "$TAG"
+            git push origin "refs/tags/$TAG"
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3.0.0
         with:
-          tag_name: ${{ steps.get_version.outputs.version }}
-          name: Release ${{ steps.get_version.outputs.version }}
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Release ${{ steps.version.outputs.version }}
+          target_commitish: ${{ github.sha }}
           generate_release_notes: true
+          fail_on_unmatched_files: true
           files: |
             dist/*.tar.gz
             dist/*.whl
-            dist/signatures/*.sigstore.json
+            release-signatures/*.sigstore.json
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@v1.14.0
