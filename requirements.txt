@@ -1,2 +1,0 @@
-cryptography>=45.0.1
-brotli>=1.1.0

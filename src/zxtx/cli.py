@@ -62,7 +62,7 @@ def get_password_interactive() -> bytes | None:
             "Enter private key password (or press Enter for none): "
         )
         return password.encode("utf-8") if password else None
-    except (KeyboardInterrupt, EOFError):
+    except KeyboardInterrupt, EOFError:
         return None
 
 

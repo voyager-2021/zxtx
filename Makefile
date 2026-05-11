@@ -1,4 +1,4 @@
-.PHONY: all install install-dev install-opt remake-venv test format build publish tox precommit precommit-update clean _clean_wrapper rebase-interactive log delete-branch-remote push-upstream rebase-push stash-apply stash-pop check-dirty
+.PHONY: all sync sync-dev sync-all install install-dev install-opt remake-venv test format build publish tox precommit precommit-update clean _clean_wrapper rebase-interactive log delete-branch-remote push-upstream rebase-push stash-apply stash-pop check-dirty
 
 ifneq ($(OS),Windows_NT)
 export $(shell cat .env 2>/dev/null | xargs)
@@ -6,53 +6,54 @@ endif
 
 all: build
 
+sync:
+	@uv sync
+
+sync-dev:
+	@uv sync --dev
+
+sync-all:
+	@uv sync --all-extras --all-groups
+
 install:
-	@pip install .
+	@uv pip install .
 
 install-dev:
-	@pip install .[dev]
+	@uv pip install .[dev]
 
 install-opt:
-	@pip install .[opt]
+	@uv pip install .[opt]
 
 remake-venv:
-ifneq ($(OS),Windows_NT)
-	@if [ -d .venv ]; then \
-		rm -rf .venv; \
-	fi
-	@python3 -m venv create
-	@source .venv/bin/activate
-else
-	$(error This command is not supported on Windows)
-endif
+	@uv venv --clear -p 3.14
+	@. .venv/bin/activate
 
 test:
-	@coverage run -m pytest -m "not slow"
-	@coverage report
-	@coverage html
-	@coverage xml
+	@uv run coverage run -m pytest -m "not slow"
+	@uv run coverage report
+	@uv run coverage html
+	@uv run coverage xml
 
 tox:
-	@tox
+	@uv run tox
+
+lint:
+	@uv run ruff check src tests
+	@uv run mypy src tests
 
 format:
-	@black src tests
-	@isort src tests
-
-build:
-	@python -m build
-
-publish: build
-	@twine publish
+	@uv run black src tests
+	@uv run isort src tests --profile black
+	@uv run ruff format
 
 precommit:
 	@$(MAKE) _precommit_wrapper -iks
 
 _precommit_wrapper:
-	@pre-commit run --all-files
+	@uv run pre-commit run --all-files
 
 precommit-update:
-	@pre-commit autoupdate --repo https://github.com/pre-commit/pre-commit-hooks
+	@uv run pre-commit autoupdate --repo https://github.com/pre-commit/pre-commit-hooks
 
 clean:
 	@$(MAKE) _clean_wrapper -iks

@@ -122,7 +122,9 @@ def keypair_and_cert(tmp_path, request):
 @pytest.mark.parametrize(
     ("compression", "original_data"),
     test_params,
-    ids=lambda val: f"DATA_{len(val)//1024}KB" if isinstance(val, bytes) else str(val),
+    ids=lambda val: (
+        f"DATA_{len(val) // 1024}KB" if isinstance(val, bytes) else str(val)
+    ),
 )
 def test_unencrypted_compressed_ed25519(
     tmp_path, keypair_and_cert, compression, original_data

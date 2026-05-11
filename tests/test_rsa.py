@@ -148,7 +148,9 @@ def keypair_and_cert(tmp_path, request):
 @pytest.mark.parametrize(
     ("cipher", "compression", "original_data"),
     test_params,
-    ids=lambda val: f"DATA_{len(val)//1024}KB" if isinstance(val, bytes) else str(val),
+    ids=lambda val: (
+        f"DATA_{len(val) // 1024}KB" if isinstance(val, bytes) else str(val)
+    ),
 )
 def test_encrypted_compressed_rsa(
     tmp_path, keypair_and_cert, cipher, compression, original_data

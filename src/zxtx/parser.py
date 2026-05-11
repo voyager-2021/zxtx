@@ -174,7 +174,10 @@ def read_zxtx_file(header: ZXTXHeader, body: ZXTXBody, private_key) -> bytes:
 
             session_key = decrypt_key_rsa(private_key, body.encrypted_key)
             decrypted_data = decrypt_data_aes256_ctr_hmac(
-                body.data, body.nonce, body.tag, session_key  # type: ignore
+                body.data,
+                body.nonce,
+                body.tag,
+                session_key,  # type: ignore
             )
         case _:
             raise NotImplementedError(
