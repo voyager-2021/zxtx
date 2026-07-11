@@ -62,7 +62,9 @@ def get_password_interactive() -> bytes | None:
             "Enter private key password (or press Enter for none): "
         )
         return password.encode("utf-8") if password else None
-    except (KeyboardInterrupt, EOFError):
+    except KeyboardInterrupt:
+        return None
+    except EOFError:
         return None
 
 
@@ -144,7 +146,9 @@ def explain_error(e: Exception):
 
 def write_cmd(args):
     password_bytes = args.password.encode("utf-8") if args.password else None
-    private_key_obj, password_bytes = load_private_key_with_prompt(args.private_key, password_bytes)
+    private_key_obj, password_bytes = load_private_key_with_prompt(
+        args.private_key, password_bytes
+    )
 
     try:
         # Handle stdin input
@@ -201,7 +205,9 @@ def write_cmd(args):
 
 def read_cmd(args):
     password_bytes = args.password.encode("utf-8") if args.password else None
-    private_key_obj, password_bytes = load_private_key_with_prompt(args.private_key, password_bytes)
+    private_key_obj, password_bytes = load_private_key_with_prompt(
+        args.private_key, password_bytes
+    )
 
     try:
         # Handle stdin input
@@ -288,7 +294,9 @@ def read_cmd(args):
 
 def dump_cmd(args):
     password_bytes = args.password.encode("utf-8") if args.password else None
-    private_key_obj, password_bytes = load_private_key_with_prompt(args.private_key, password_bytes)
+    private_key_obj, password_bytes = load_private_key_with_prompt(
+        args.private_key, password_bytes
+    )
 
     try:
         # Handle stdin input

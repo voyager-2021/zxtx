@@ -35,7 +35,9 @@ class ZXTXHeader:
         header += MAGIC_NUMBER
         header += struct.pack("BB", self.version_major, self.version_minor)
         header += self.uid
-        header += struct.pack("BB", self.compression_method.value, self.cipher_method.value)
+        header += struct.pack(
+            "BB", self.compression_method.value, self.cipher_method.value
+        )
         header += struct.pack(">Q", self.original_size)
         header += struct.pack(">Q", self.compressed_size)
         header += struct.pack(">d", self.timestamp)

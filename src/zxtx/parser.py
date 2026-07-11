@@ -97,7 +97,9 @@ def parse_zxtx_header(
                     key_size = bits_to_bytes(bits=private_key.key_size)
 
                 # Set nonce size depending on cipher
-                nonce_size = 16 if cipher_method == CIPHER_METHOD.AES256_CTR_HMAC else 12
+                nonce_size = (
+                    16 if cipher_method == CIPHER_METHOD.AES256_CTR_HMAC else 12
+                )
 
                 encrypted_key = compressed_data[:key_size]
                 nonce = compressed_data[key_size : key_size + nonce_size]

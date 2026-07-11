@@ -1,11 +1,14 @@
-import pytest
-import struct
-import sys
-import os
 from io import BytesIO
+
+import pytest
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+
+from zxtx.cli import load_private_key_with_prompt
 from zxtx.constants import CIPHER_METHOD, COMPRESSION_METHOD
-from zxtx.highlevel import write_stream_chunked, read_stream_chunked
+from zxtx.highlevel import read_stream_chunked, write_stream_chunked
 from zxtx.parser import parse_zxtx_header
+
 
 def test_truncated_header_raises_value_error():
     # Empty bytes
@@ -69,10 +72,6 @@ def test_chunked_streaming_unencrypted_non_seekable():
 
 
 def test_cli_load_private_key_with_prompt_unencrypted(tmp_path):
-    from zxtx.cli import load_private_key_with_prompt
-    from cryptography.hazmat.primitives.asymmetric import rsa
-    from cryptography.hazmat.primitives import serialization
-
     # Generate an unencrypted private key
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     key_path = tmp_path / "unencrypted.pem"
@@ -90,10 +89,6 @@ def test_cli_load_private_key_with_prompt_unencrypted(tmp_path):
 
 
 def test_cli_load_private_key_with_prompt_encrypted(tmp_path, monkeypatch):
-    from zxtx.cli import load_private_key_with_prompt
-    from cryptography.hazmat.primitives.asymmetric import rsa
-    from cryptography.hazmat.primitives import serialization
-
     # Generate an encrypted private key
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     key_path = tmp_path / "encrypted.pem"

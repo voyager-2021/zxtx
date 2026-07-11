@@ -520,7 +520,9 @@ def read_stream_chunked(
 
     # For now, fall back to read_stream for encrypted data
     # since we need the full file for AEAD verification
-    if len(header_start) >= 24 and header_start[23] != CIPHER_METHOD.NONE.value:  # Check cipher method
+    if (
+        len(header_start) >= 24 and header_start[23] != CIPHER_METHOD.NONE.value
+    ):  # Check cipher method
         # Encrypted - need full data
         remaining = input_stream.read()
         data = read_stream(

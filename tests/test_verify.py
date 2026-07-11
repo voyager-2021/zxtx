@@ -127,7 +127,9 @@ def test_sign_and_verify_success(keypair_and_cert):
     encrypted_payload = b"encrypted_session_key + nonce + ciphertext + tag"
     data_to_sign = header_bytes + encrypted_payload
     signature = sign_data(private_key, data_to_sign)
-    assert verify_signature(certificate, certificate, header_bytes, encrypted_payload, signature)
+    assert verify_signature(
+        certificate, certificate, header_bytes, encrypted_payload, signature
+    )
 
 
 def test_verify_fails_on_modified_data(keypair_and_cert):
@@ -143,7 +145,9 @@ def test_verify_fails_on_modified_data(keypair_and_cert):
     # Tamper with the encrypted payload
     tampered_payload = b"tampered_session_key + nonce + ciphertext + tag"
 
-    assert not verify_signature(certificate, certificate, header_bytes, tampered_payload, signature)
+    assert not verify_signature(
+        certificate, certificate, header_bytes, tampered_payload, signature
+    )
 
 
 def test_verify_fails_on_wrong_signature(keypair_and_cert):
@@ -154,7 +158,9 @@ def test_verify_fails_on_wrong_signature(keypair_and_cert):
     encrypted_payload = b"encrypted_session_key + nonce + ciphertext + tag"
     signature = b"not-a-valid-signature"
 
-    assert not verify_signature(certificate, certificate, header_bytes, encrypted_payload, signature)
+    assert not verify_signature(
+        certificate, certificate, header_bytes, encrypted_payload, signature
+    )
 
 
 def test_verify_fails_on_certificate_mismatch(keypair_and_cert, tmp_path):

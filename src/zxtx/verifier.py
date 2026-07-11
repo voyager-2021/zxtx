@@ -56,7 +56,9 @@ def verify_signature(
             valid = True
 
         elif isinstance(public_key, rsa.RSAPublicKey):
-            public_key.verify(signature, data_to_verify, padding.PKCS1v15(), hashes.SHA256())
+            public_key.verify(
+                signature, data_to_verify, padding.PKCS1v15(), hashes.SHA256()
+            )
             valid = True
 
     except Exception:
