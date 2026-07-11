@@ -90,18 +90,21 @@ def get_bytes(path: str | None) -> bytes | None:
 
 def load_private_key_with_prompt(
     private_key_path: str | None, password: bytes | None = None
-) -> bytes | None:
-    """Load private key, prompting for password if needed and not provided."""
+) -> tuple[object | None, bytes | None]:
+    """Load private key, prompting for password if needed and not provided.
+
+    Returns:
+        A tuple of (private_key_obj, resolved_password_bytes)
+    """
     if not private_key_path:
-        return None
+        return None, password
 
     key_bytes = Path(private_key_path).read_bytes()
 
     # Try loading without password first
     try:
-        load_private_key(key_bytes, password=None)
-
-        return key_bytes
+        private_key = load_private_key(key_bytes, password=None)
+        return private_key, None
     except Exception:
         # Key is encrypted, need password
         if password is None:
@@ -112,8 +115,8 @@ def load_private_key_with_prompt(
 
         # Verify password works
         try:
-            load_private_key(key_bytes, password=password)
-            return key_bytes
+            private_key = load_private_key(key_bytes, password=password)
+            return private_key, password
         except Exception:
             error("Invalid password for private key")
             sys.exit(1)
@@ -141,6 +144,7 @@ def explain_error(e: Exception):
 
 def write_cmd(args):
     password_bytes = args.password.encode("utf-8") if args.password else None
+    private_key_obj, password_bytes = load_private_key_with_prompt(args.private_key, password_bytes)
 
     try:
         # Handle stdin input
@@ -158,7 +162,7 @@ def write_cmd(args):
                 compression=COMPRESSION_METHOD(args.compression),
                 password=password_bytes,
                 certificate=get_bytes(args.certificate),
-                private_key=get_bytes(args.private_key),
+                private_key=private_key_obj,
                 public_key=get_bytes(args.public_key),
             )
         else:
@@ -173,7 +177,7 @@ def write_cmd(args):
                         compression=COMPRESSION_METHOD(args.compression),
                         password=password_bytes,
                         certificate=get_bytes(args.certificate),
-                        private_key=get_bytes(args.private_key),
+                        private_key=private_key_obj,
                         public_key=get_bytes(args.public_key),
                     ) as output_file:
                         output_file.write_bytes(input_data)
@@ -185,7 +189,7 @@ def write_cmd(args):
                     compression=COMPRESSION_METHOD(args.compression),
                     password=password_bytes,
                     certificate=get_bytes(args.certificate),
-                    private_key=get_bytes(args.private_key),
+                    private_key=private_key_obj,
                     public_key=get_bytes(args.public_key),
                 ) as output_file:
                     output_file.write_bytes(input_data)
@@ -197,7 +201,7 @@ def write_cmd(args):
 
 def read_cmd(args):
     password_bytes = args.password.encode("utf-8") if args.password else None
-    private_key_bytes = load_private_key_with_prompt(args.private_key, password_bytes)
+    private_key_obj, password_bytes = load_private_key_with_prompt(args.private_key, password_bytes)
 
     try:
         # Handle stdin input
@@ -205,7 +209,7 @@ def read_cmd(args):
             raw_data = sys.stdin.buffer.read()
             header, body = parse_zxtx_header(
                 raw_data,
-                private_key=private_key_bytes,
+                private_key=private_key_obj,
                 cipher_method=CIPHER_METHOD(args.cipher) if args.cipher else None,
                 compression_method=(
                     COMPRESSION_METHOD(args.compression) if args.compression else None
@@ -236,7 +240,7 @@ def read_cmd(args):
                 args.input_path,
                 password=password_bytes,
                 public_key=get_bytes(args.public_key),
-                private_key=private_key_bytes,
+                private_key=private_key_obj,
                 certificate=get_bytes(args.certificate),
                 cipher=CIPHER_METHOD(args.cipher),
                 compression=COMPRESSION_METHOD(args.compression),
@@ -284,6 +288,7 @@ def read_cmd(args):
 
 def dump_cmd(args):
     password_bytes = args.password.encode("utf-8") if args.password else None
+    private_key_obj, password_bytes = load_private_key_with_prompt(args.private_key, password_bytes)
 
     try:
         # Handle stdin input
@@ -292,7 +297,7 @@ def dump_cmd(args):
 
             header, body = parse_zxtx_header(
                 raw_data,
-                private_key=get_bytes(args.private_key),
+                private_key=private_key_obj,
                 cipher_method=CIPHER_METHOD(args.cipher) if args.cipher else None,
                 compression_method=(
                     COMPRESSION_METHOD(args.compression) if args.compression else None
@@ -304,7 +309,7 @@ def dump_cmd(args):
                 args.input_path,
                 password=password_bytes,
                 public_key=get_bytes(args.public_key),
-                private_key=get_bytes(args.private_key),
+                private_key=private_key_obj,
                 certificate=get_bytes(args.certificate),
                 cipher=CIPHER_METHOD(args.cipher),
                 compression=COMPRESSION_METHOD(args.compression),

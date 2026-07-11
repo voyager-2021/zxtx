@@ -19,97 +19,100 @@ from zxtx.utils import bits_to_bytes, is_encrypted
 def parse_zxtx_header(
     data: bytes, private_key=None, *, compression_method=None, cipher_method=None
 ) -> tuple[ZXTXHeader, ZXTXBody]:
-    offset = 0
+    try:
+        offset = 0
 
-    def read(fmt: str):
-        nonlocal offset
-        size = struct.calcsize(fmt)
-        value = struct.unpack_from(fmt, data, offset)
-        offset += size
-        return value if len(value) > 1 else value[0]  # type: ignore
+        def read(fmt: str):
+            nonlocal offset
+            size = struct.calcsize(fmt)
+            value = struct.unpack_from(fmt, data, offset)
+            offset += size
+            return value if len(value) > 1 else value[0]  # type: ignore
 
-    # Magic number
-    magic = data[offset : offset + 4]
-    if magic != MAGIC_NUMBER:
-        raise ValueError("Invalid ZXTX file: bad magic number")
+        # Magic number
+        magic = data[offset : offset + 4]
+        if magic != MAGIC_NUMBER:
+            raise ValueError("Invalid ZXTX file: bad magic number")
 
-    offset += 4
+        offset += 4
 
-    version_minor = data[offset + 1]
-    version_major = data[offset]
-    offset += 2
+        version_minor = data[offset + 1]
+        version_major = data[offset]
+        offset += 2
 
-    uid = data[offset : offset + 16]
-    offset += 16
+        uid = data[offset : offset + 16]
+        offset += 16
 
-    compression_method = (
-        COMPRESSION_METHOD(data[offset])
-        if compression_method is None
-        else compression_method
-    )
+        compression_method = (
+            COMPRESSION_METHOD(data[offset])
+            if compression_method is None
+            else compression_method
+        )
 
-    cipher_method = (
-        CIPHER_METHOD(data[offset + 1]) if cipher_method is None else cipher_method
-    )
+        cipher_method = (
+            CIPHER_METHOD(data[offset + 1]) if cipher_method is None else cipher_method
+        )
 
-    offset += 2
+        offset += 2
 
-    original_size = read(">Q")
-    compressed_size = read(">Q")
-    timestamp = read(">d")
-    sha256_hash = data[offset : offset + 32]
-    offset += 32
+        original_size = read(">Q")
+        compressed_size = read(">Q")
+        timestamp = read(">d")
+        sha256_hash = data[offset : offset + 32]
+        offset += 32
 
-    crc32 = read(">I")
-    cert_len = read(">H")
-    certificate = data[offset : offset + cert_len]
-    offset += cert_len
+        crc32 = read(">I")
+        cert_len = read(">H")
+        certificate = data[offset : offset + cert_len]
+        offset += cert_len
 
-    sig_len = read(">H")
-    signature = data[offset : offset + sig_len]
-    offset += sig_len
+        sig_len = read(">H")
+        signature = data[offset : offset + sig_len]
+        offset += sig_len
 
-    compressed_data = data[offset : offset + compressed_size]
+        compressed_data = data[offset : offset + compressed_size]
 
-    if zlib.crc32(compressed_data) != crc32:
-        raise ValueError("CRC32 mismatch: file may be corrupted or tampered")
+        if zlib.crc32(compressed_data) != crc32:
+            raise ValueError("CRC32 mismatch: file may be corrupted or tampered")
 
-    tag = None
+        tag = None
 
-    # If cipher is none, compressed_data is raw compressed data
-    # Else, encrypted_data structure: encrypted_session_key + nonce + encrypted_blob
-    match cipher_method:
-        case CIPHER_METHOD.NONE:
-            encrypted_key = None
-            nonce = None
-            encrypted_blob = compressed_data
-            tag = None
-        case (
-            CIPHER_METHOD.AES256_CTR_HMAC
-            | CIPHER_METHOD.AES256_GCM
-            | CIPHER_METHOD.CHACHA20_POLY1305
-        ):
-            if private_key is None:
-                # Default to RSA-2048 (256 bytes)
-                key_size = 256
-            else:
-                key_size = bits_to_bytes(bits=private_key.key_size)
-
-            # Set nonce size depending on cipher
-            nonce_size = 16 if cipher_method == CIPHER_METHOD.AES256_CTR_HMAC else 12
-
-            encrypted_key = compressed_data[:key_size]
-            nonce = compressed_data[key_size : key_size + nonce_size]
-
-            if cipher_method == CIPHER_METHOD.AES256_CTR_HMAC:
-                # Last 32 bytes are HMAC tag
-                encrypted_blob = compressed_data[key_size + nonce_size : -32]
-                tag = compressed_data[-32:]
-            else:
-                encrypted_blob = compressed_data[key_size + nonce_size :]
+        # If cipher is none, compressed_data is raw compressed data
+        # Else, encrypted_data structure: encrypted_session_key + nonce + encrypted_blob
+        match cipher_method:
+            case CIPHER_METHOD.NONE:
+                encrypted_key = None
+                nonce = None
+                encrypted_blob = compressed_data
                 tag = None
-        case _:
-            raise ValueError(f"Invalid cipher method '{cipher_method}'")
+            case (
+                CIPHER_METHOD.AES256_CTR_HMAC
+                | CIPHER_METHOD.AES256_GCM
+                | CIPHER_METHOD.CHACHA20_POLY1305
+            ):
+                if private_key is None:
+                    # Default to RSA-2048 (256 bytes)
+                    key_size = 256
+                else:
+                    key_size = bits_to_bytes(bits=private_key.key_size)
+
+                # Set nonce size depending on cipher
+                nonce_size = 16 if cipher_method == CIPHER_METHOD.AES256_CTR_HMAC else 12
+
+                encrypted_key = compressed_data[:key_size]
+                nonce = compressed_data[key_size : key_size + nonce_size]
+
+                if cipher_method == CIPHER_METHOD.AES256_CTR_HMAC:
+                    # Last 32 bytes are HMAC tag
+                    encrypted_blob = compressed_data[key_size + nonce_size : -32]
+                    tag = compressed_data[-32:]
+                else:
+                    encrypted_blob = compressed_data[key_size + nonce_size :]
+                    tag = None
+            case _:
+                raise ValueError(f"Invalid cipher method '{cipher_method}'")
+    except (IndexError, struct.error) as e:
+        raise ValueError("Invalid ZXTX file: truncated or malformed header") from e
 
     return (
         ZXTXHeader(

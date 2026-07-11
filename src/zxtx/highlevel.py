@@ -520,7 +520,7 @@ def read_stream_chunked(
 
     # For now, fall back to read_stream for encrypted data
     # since we need the full file for AEAD verification
-    if header_start[6:8] != bytes([0, 0]):  # Check cipher method (offset varies)
+    if len(header_start) >= 24 and header_start[23] != CIPHER_METHOD.NONE.value:  # Check cipher method
         # Encrypted - need full data
         remaining = input_stream.read()
         data = read_stream(
@@ -533,9 +533,16 @@ def read_stream_chunked(
     # Unencrypted - can stream decompress
     # Re-read from beginning with proper header parsing
     if hasattr(input_stream, "seek"):
-        input_stream.seek(0)
+        try:
+            input_stream.seek(0)
+            raw_data = input_stream.read()
+        except OSError:
+            remaining = input_stream.read()
+            raw_data = header_start + remaining
+    else:
+        remaining = input_stream.read()
+        raw_data = header_start + remaining
 
-    raw_data = input_stream.read()
     header, body = parse_zxtx_header(raw_data, private_key=_private_key)
 
     # Decompress and write in chunks
