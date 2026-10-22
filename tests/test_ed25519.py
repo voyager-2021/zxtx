@@ -154,4 +154,3 @@ def test_unencrypted_compressed_ed25519(
 
     # Decrypt and read
     assert decrypted == original_data
-

@@ -5,7 +5,6 @@ import struct
 import time
 import uuid
 import zlib
-from typing import Optional
 
 import brotli
 
@@ -35,7 +34,8 @@ def write_zxtx_file(
     compression_method: COMPRESSION_METHOD,
     cipher_method: CIPHER_METHOD,
     private_key,
-    certificate: Optional[bytes] = None,
+    *,
+    certificate: bytes | None = None,
     public_key=None,
     version=FORMAT_VERSION,
 ) -> bytes:
@@ -62,9 +62,7 @@ def write_zxtx_file(
     if certificate is None:
         certificate = b""
     if not isinstance(certificate, (bytes, bytearray)):
-        raise TypeError(
-            f"certificate must be bytes, got {type(certificate).__name__}"
-        )
+        raise TypeError(f"certificate must be bytes, got {type(certificate).__name__}")
     certificate = bytes(certificate)
     if len(certificate) > UINT16_MAX:
         raise ValueError(
@@ -90,7 +88,7 @@ def write_zxtx_file(
     # Associated data binding the encrypted body to this header.  Only
     # fields known *before* encryption are covered (compressed size and
     # CRC32 depend on the ciphertext itself and are therefore excluded).
-    body_binding: Optional[bytes] = None
+    body_binding: bytes | None = None
     if version_at_least(version, (1, 1)):
         body_binding = header_identity_digest(
             ZXTXHeader(
@@ -146,9 +144,7 @@ def write_zxtx_file(
             encrypted_session_key = encrypt_key_rsa(public_key, session_key)
 
             # Format: encrypted_session_key + nonce + ciphertext + tag
-            compressed_final = (
-                encrypted_session_key + nonce + encrypted_data + tag
-            )
+            compressed_final = encrypted_session_key + nonce + encrypted_data + tag
         case _:
             raise NotImplementedError(f"Unsupported cipher method '{cipher_method}'")
 
@@ -185,4 +181,3 @@ def write_zxtx_file(
     header_bytes += struct.pack(">H", len(signature)) + signature
 
     return header_bytes + compressed_final
-

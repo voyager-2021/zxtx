@@ -51,10 +51,10 @@ cert = (
     .issuer_name(issuer)
     .public_key(private_key.public_key())
     .serial_number(x509.random_serial_number())
-    .not_valid_before(datetime.datetime.now(datetime.timezone.utc))
+    .not_valid_before(datetime.datetime.now(datetime.UTC))
     .not_valid_after(
         # Valid for 10 years
-        datetime.datetime.now(datetime.timezone.utc)
+        datetime.datetime.now(datetime.UTC)
         + datetime.timedelta(days=3650)
     )
     .add_extension(
@@ -67,4 +67,3 @@ cert = (
 # 4. Save certificate to PEM
 with open("certificate.pem", "wb") as f:
     f.write(cert.public_bytes(serialization.Encoding.PEM))
-

@@ -79,4 +79,3 @@ def verify_signature(cert_or_key, data: bytes, signature: bytes) -> bool:
         return True
     except (InvalidSignature, ValueError, TypeError):
         return False
-

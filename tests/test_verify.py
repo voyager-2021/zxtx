@@ -148,4 +148,3 @@ def test_verify_fails_on_wrong_signature(keypair_and_cert):
     signature = b"not-a-valid-signature"
 
     assert not verify_signature(certificate, data, signature)
-

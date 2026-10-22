@@ -2,7 +2,6 @@ import hashlib
 import lzma
 import struct
 import zlib
-from typing import Optional
 
 import brotli
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -195,7 +194,7 @@ def parse_zxtx_header(
                 "signed by a different key"
             )
 
-    tag: Optional[bytes] = None
+    tag: bytes | None = None
 
     # If cipher is none, compressed_data is raw compressed data
     # Else, encrypted_data structure:
@@ -224,10 +223,14 @@ def parse_zxtx_header(
                 if cipher_method == CIPHER_METHOD.AES256_CTR_HMAC
                 else NONCE_SIZE_AEAD
             )
-            min_body = key_size + nonce_size + (
-                CTR_HMAC_TAG_SIZE
-                if cipher_method == CIPHER_METHOD.AES256_CTR_HMAC
-                else 0
+            min_body = (
+                key_size
+                + nonce_size
+                + (
+                    CTR_HMAC_TAG_SIZE
+                    if cipher_method == CIPHER_METHOD.AES256_CTR_HMAC
+                    else 0
+                )
             )
             if len(compressed_data) < min_body:
                 raise ValueError(
@@ -276,9 +279,7 @@ def _cipher_enum(value: int) -> CIPHER_METHOD:
     try:
         return CIPHER_METHOD(value)
     except ValueError:
-        raise ValueError(
-            f"Invalid cipher method ID {value} in file header"
-        ) from None
+        raise ValueError(f"Invalid cipher method ID {value} in file header") from None
 
 
 def _require_rsa_private_key(private_key) -> None:
@@ -356,9 +357,7 @@ def read_zxtx_file(header: ZXTXHeader, body: ZXTXBody, private_key=None) -> byte
     elif header.compression_method == COMPRESSION_METHOD.LZMA:
         decompressed = _decompress_bounded_lzma(decrypted_data, header.original_size)
     elif header.compression_method == COMPRESSION_METHOD.BROTLI:
-        decompressed = _decompress_bounded_brotli(
-            decrypted_data, header.original_size
-        )
+        decompressed = _decompress_bounded_brotli(decrypted_data, header.original_size)
     else:
         raise NotImplementedError(
             f"Unsupported compression method '{header.compression_method}'"
@@ -407,9 +406,7 @@ def _decompress_bounded_zlib(data: bytes, limit: int) -> bytes:
             pending = decompressor.unconsumed_tail
 
             if not piece and not pending and not decompressor.eof:
-                raise ValueError(
-                    "Invalid compressed data: truncated zlib stream"
-                )
+                raise ValueError("Invalid compressed data: truncated zlib stream")
     except zlib.error as error:
         raise ValueError(f"Invalid compressed data: {error}") from None
 
@@ -434,7 +431,7 @@ def _decompress_bounded_lzma(data: bytes, limit: int) -> bytes:
             out += piece
             # Get unconsumed input for next iteration (Python 3.3+ has unconsumed_tail,
             # but fall back to manual tracking if not available)
-            source = getattr(decompressor, 'unconsumed_tail', b'')
+            source = getattr(decompressor, "unconsumed_tail", b"")
 
             if not piece and not decompressor.eof:
                 raise ValueError("Invalid compressed data: truncated LZMA stream")
@@ -469,5 +466,3 @@ def _decompress_bounded_brotli(data: bytes, limit: int) -> bytes:
 
     _check_bomb(limit, len(out), "Brotli")
     return bytes(out)
-
-

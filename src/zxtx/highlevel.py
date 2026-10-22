@@ -2,7 +2,6 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import Optional
 
 from cryptography.hazmat.primitives.asymmetric.types import (
     PrivateKeyTypes,
@@ -29,7 +28,9 @@ def _atomic_write(target: Path, payload: bytes) -> None:
     """Write ``payload`` to ``target`` atomically (temp file + rename)."""
     parent = target.parent
     parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(prefix=f".{target.name}.", suffix=".tmp", dir=parent)
+    fd, tmp_name = tempfile.mkstemp(
+        prefix=f".{target.name}.", suffix=".tmp", dir=parent
+    )
     tmp_path = Path(tmp_name)
     try:
         with os.fdopen(fd, "wb") as f:
@@ -49,10 +50,10 @@ class ZXTXFileHandle:
         *,
         cipher: CIPHER_METHOD = CIPHER_METHOD.NONE,
         compression: COMPRESSION_METHOD = COMPRESSION_METHOD.NONE,
-        certificate: Optional[bytes] = None,
-        private_key: Optional[PrivateKeyTypes | bytes] = None,
-        public_key: Optional[PublicKeyTypes | bytes] = None,
-        password: Optional[bytes] = None,
+        certificate: bytes | None = None,
+        private_key: PrivateKeyTypes | bytes | None = None,
+        public_key: PublicKeyTypes | bytes | None = None,
+        password: bytes | None = None,
         encoding: str = "utf-8",
         create: bool = False,
     ) -> None:
@@ -92,9 +93,7 @@ class ZXTXFileHandle:
         # Verification anchor when reading: a public key if provided,
         # otherwise the supplied X.509 certificate bytes.
         self._verification_key = (
-            self._public_key
-            if self._public_key is not None
-            else self._certificate
+            self._public_key if self._public_key is not None else self._certificate
         )
 
         # The password is only needed once, to decrypt the private key
@@ -104,12 +103,12 @@ class ZXTXFileHandle:
 
         self._closed = False
 
-        self._header: Optional[ZXTXHeader] = None
-        self._body: Optional[ZXTXBody] = None
+        self._header: ZXTXHeader | None = None
+        self._body: ZXTXBody | None = None
         self._raw_data: bytes = b""
         self._data: bytes = b""
         self._loaded = False
-        self._signature_verified: Optional[bool] = None
+        self._signature_verified: bool | None = None
 
         if self._path.exists():
             if not self._path.is_file():
@@ -253,7 +252,7 @@ class ZXTXFileHandle:
         return self._body
 
     @property
-    def signature_verified(self) -> Optional[bool]:
+    def signature_verified(self) -> bool | None:
         """
         Verification state of the loaded file:
 
@@ -294,10 +293,10 @@ def open(
     *,
     cipher: CIPHER_METHOD = CIPHER_METHOD.NONE,
     compression: COMPRESSION_METHOD = COMPRESSION_METHOD.NONE,
-    certificate: Optional[bytes] = None,
-    private_key: Optional[PrivateKeyTypes | bytes] = None,
-    public_key: Optional[PublicKeyTypes | bytes] = None,
-    password: Optional[bytes] = None,
+    certificate: bytes | None = None,
+    private_key: PrivateKeyTypes | bytes | None = None,
+    public_key: PublicKeyTypes | bytes | None = None,
+    password: bytes | None = None,
     encoding: str = "utf-8",
     create: bool = False,
 ) -> ZXTXFileHandle:
@@ -321,4 +320,3 @@ def open(
         encoding=encoding,
         create=create,
     )
-

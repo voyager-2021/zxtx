@@ -2,7 +2,6 @@ import datetime as dt
 import hashlib
 import struct
 from dataclasses import dataclass
-from typing import Optional
 
 from zxtx.constants import CIPHER_METHOD, COMPRESSION_METHOD, MAGIC_NUMBER
 
@@ -27,7 +26,7 @@ class ZXTXHeader:
     sha256_hash: bytes
     crc32: int
     signature: bytes
-    certificate: Optional[bytes]
+    certificate: bytes | None
 
     def creation_time(self) -> dt.datetime:
         return dt.datetime.fromtimestamp(self.timestamp)
@@ -36,9 +35,9 @@ class ZXTXHeader:
 @dataclass
 class ZXTXBody:
     data: bytes
-    nonce: Optional[bytes]
-    encrypted_key: Optional[bytes]
-    tag: Optional[bytes]
+    nonce: bytes | None
+    encrypted_key: bytes | None
+    tag: bytes | None
 
 
 @dataclass
@@ -74,15 +73,15 @@ def pack_header(header: ZXTXHeader) -> bytes:
         )
     if not isinstance(header.uid, (bytes, bytearray)) or len(header.uid) != 16:
         raise ValueError("uid must be exactly 16 bytes")
-    if not isinstance(header.sha256_hash, (bytes, bytearray)) or len(
-        header.sha256_hash
-    ) != 32:
+    if (
+        not isinstance(header.sha256_hash, (bytes, bytearray))
+        or len(header.sha256_hash) != 32
+    ):
         raise ValueError("sha256_hash must be exactly 32 bytes")
     certificate = header.certificate or b""
     if not isinstance(certificate, (bytes, bytearray)):
         raise TypeError(
-            f"certificate must be bytes or None, "
-            f"got {type(header.certificate)!r}"
+            f"certificate must be bytes or None, " f"got {type(header.certificate)!r}"
         )
     if len(certificate) > UINT16_MAX:
         raise ValueError("Embedded certificate too large (uint16 length field)")
@@ -135,4 +134,3 @@ def header_identity_digest(header: ZXTXHeader) -> bytes:
         + certificate
     )
     return hashlib.sha256(payload).digest()
-

@@ -39,4 +39,3 @@ def load_private_key(pem_bytes: bytes, password=None):
 
 def load_public_key(pem_bytes: bytes):
     return load_pem_public_key(pem_bytes)
-

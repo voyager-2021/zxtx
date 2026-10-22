@@ -38,4 +38,3 @@ zxtx_bytes = write_zxtx_file(
 # Save to file
 with open("example2.zxtx", "wb") as f:
     f.write(zxtx_bytes)
-

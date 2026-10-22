@@ -2,7 +2,6 @@ import argparse
 import sys
 from importlib.metadata import version
 from pathlib import Path
-from typing import Optional
 
 from zxtx.constants import CIPHER_METHOD, COMPRESSION_METHOD
 from zxtx.dtypes import ZXTXBody, ZXTXData, ZXTXHeader
@@ -252,4 +251,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

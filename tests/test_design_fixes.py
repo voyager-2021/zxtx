@@ -10,13 +10,24 @@ Regression tests for the 0.2.0 security/correctness fixes:
 * writer output can be re-parsed bit-for-bit (packed-header parity)
 """
 
+import hashlib
+import lzma
 import os
 import struct
+import uuid
 import zlib
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
+import brotli
 import pytest
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives import hmac as crypto_hmac
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.x509.oid import NameOID
 
 from zxtx import open as zxtx_open
 from zxtx.constants import CIPHER_METHOD, COMPRESSION_METHOD
@@ -42,16 +53,16 @@ def get_body_start(raw: bytes) -> int:
 
 
 @pytest.fixture
+def temp_dir():
+    with TemporaryDirectory() as tmp:
+        yield Path(tmp)
+
+
+@pytest.fixture
 def keypair(tmp_path):
     """RSA-2048 keypair + self-signed certificate, written as PEM files."""
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     public_key = private_key.public_key()
-
-    from datetime import datetime, timedelta, timezone
-
-    from cryptography import x509
-    from cryptography.hazmat.primitives import serialization
-    from cryptography.x509.oid import NameOID
 
     subject = issuer = x509.Name(
         [
@@ -107,8 +118,6 @@ def keypair_1024(tmp_path):
     priv_path = tmp_path / "private_key_1024.pem"
     pub_path = tmp_path / "public_key_1024.pem"
 
-    from cryptography.hazmat.primitives import serialization
-
     priv_path.write_bytes(
         private_key.private_bytes(
             serialization.Encoding.PEM,
@@ -141,7 +150,10 @@ def test_ctr_hmac_with_rsa_1024(tmp_path, keypair_1024):
     )
 
     header, body = parse_zxtx_header(zxtx_bytes, private_key=private_key)
-    assert read_zxtx_file(header, body, private_key=private_key) == b"small RSA key, big HMAC"
+    assert (
+        read_zxtx_file(header, body, private_key=private_key)
+        == b"small RSA key, big HMAC"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -233,7 +245,7 @@ def test_wrong_key_fails_verification(keypair, tmp_path):
 
 
 def test_bad_verification_key_bytes_raise_privately(keypair):
-    priv_path, pub_path, _ = keypair
+    priv_path, _pub_path, _ = keypair
     private_key = load_private_key(priv_path.read_bytes())
 
     raw = write_zxtx_file(
@@ -259,9 +271,8 @@ def test_resolve_verification_key_from_public_pem(keypair):
 
 
 def test_truncated_body_is_rejected(keypair):
-    priv_path, pub_path, _ = keypair
+    priv_path, _pub_path, _ = keypair
     private_key = load_private_key(priv_path.read_bytes())
-    public_key = load_public_key(pub_path.read_bytes())
 
     raw = write_zxtx_file(
         data=b"x" * 64,
@@ -311,16 +322,12 @@ def test_zlib_bomb_is_bounded():
 
 
 def test_lzma_bomb_is_bounded():
-    import lzma
-
     bomb = lzma.compress(b"\x00" * (1 << 15))
     with pytest.raises(ValueError, match="exceeds the declared original size"):
         _decompress_bounded_lzma(bomb, limit=128)
 
 
 def test_brotli_bomb_is_bounded():
-    import brotli
-
     bomb = brotli.compress(b"\x00" * 20000)
     with pytest.raises(ValueError, match="exceeds the declared original size"):
         _decompress_bounded_brotli(bomb, limit=64)
@@ -330,20 +337,6 @@ def test_bounded_decompression_legit_roundtrip():
     payload = os.urandom(3000)
     assert _decompress_bounded_zlib(zlib.compress(payload), limit=3000) == payload
     assert _decompress_bounded_zlib(zlib.compress(b""), limit=0) == b""
-
-
-# ---------------------------------------------------------------------------
-# 5. Packed-header parity between writer, parser and verifier
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture
-def temp_dir():
-    from pathlib import Path
-    from tempfile import TemporaryDirectory
-
-    with TemporaryDirectory() as tmp:
-        yield Path(tmp)
 
 
 # ---------------------------------------------------------------------------
@@ -378,9 +371,6 @@ def test_packed_header_roundtrip_matches_file_bytes(temp_dir, keypair):
 
 
 def test_legacy_v1_0_ctr_hmac_file_still_reads(keypair):
-    from cryptography.hazmat.primitives import hmac as crypto_hmac
-    from cryptography.hazmat.primitives.asymmetric import padding
-
     priv_path, pub_path, _ = keypair
     private_key = load_private_key(priv_path.read_bytes())
     public_key = load_public_key(pub_path.read_bytes())
@@ -389,9 +379,9 @@ def test_legacy_v1_0_ctr_hmac_file_still_reads(keypair):
     legacy_session = os.urandom(64)  # enc_key || mac_key, no HKDF
     nonce = os.urandom(16)
 
-    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-
-    encryptor = Cipher(algorithms.AES(legacy_session[:32]), modes.CTR(nonce)).encryptor()
+    encryptor = Cipher(
+        algorithms.AES(legacy_session[:32]), modes.CTR(nonce)
+    ).encryptor()
     ciphertext = encryptor.update(data) + encryptor.finalize()
 
     mac = crypto_hmac.HMAC(legacy_session[32:], hashes.SHA256())
@@ -407,10 +397,6 @@ def test_legacy_v1_0_ctr_hmac_file_still_reads(keypair):
         ),
     )
     body = wrapped + nonce + ciphertext + tag
-
-    import hashlib
-    import uuid
-    from datetime import datetime, timezone
 
     header = ZXTXHeader(
         version_major=1,
@@ -526,4 +512,3 @@ def test_signature_verified_flag(temp_dir, keypair):
     fresh.read_bytes()
     assert fresh.signature_verified is False  # signed, no anchor provided
     fresh.close()
-
