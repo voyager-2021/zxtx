@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.black]
 line-length = 88
-target-version = ['py313']
+target-version = ['py313', 'py314', 'py315']
 
 [tool.mypy]
 mypy_path = "src"
@@ -22,7 +22,7 @@ no_implicit_reexport = true
 
 [tool.ruff]
 line-length = 88
-target-version = "py313"
+target-version = "py315"
 lint.select = [
     "E",    # pycodestyle errors
     "F",    # pyflakes
