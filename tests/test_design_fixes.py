@@ -295,7 +295,7 @@ def test_cipher_override_mismatch_is_rejected():
         cipher_method=CIPHER_METHOD.NONE,
         private_key=None,
     )
-    with pytest.raises(ValueError, match=r"does not\|override"):
+    with pytest.raises(ValueError, match=r"does not match|override"):
         parse_zxtx_header(raw, cipher_method=CIPHER_METHOD.AES256_GCM)
 
 
