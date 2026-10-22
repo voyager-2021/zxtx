@@ -15,7 +15,7 @@ except ImportError:
     from pprint import pprint
 
 
-def get_bytes(path: Optional[str]) -> Optional[bytes]:
+def get_bytes(path: str | None) -> bytes | None:
     if path:
         return Path(path).read_bytes()
     return None
