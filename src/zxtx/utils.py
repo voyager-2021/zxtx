@@ -77,3 +77,4 @@ def note(message):
 
 def debug(message):
     console.print(f"[bold white]zxtx:[/bold white] [dim]debug:[/dim] {message}")
+

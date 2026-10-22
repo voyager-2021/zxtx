@@ -321,3 +321,4 @@ def open(
         encoding=encoding,
         create=create,
     )
+

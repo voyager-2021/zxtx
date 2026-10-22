@@ -237,3 +237,4 @@ def test_load_keys_from_bytes(temp_dir, rsa_keys):
 
     zfile.write(text_data)
     assert zfile.read() == text_data
+

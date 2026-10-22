@@ -67,3 +67,4 @@ cert = (
 # 4. Save certificate to PEM
 with open("certificate.pem", "wb") as f:
     f.write(cert.public_bytes(serialization.Encoding.PEM))
+

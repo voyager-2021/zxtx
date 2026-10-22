@@ -470,3 +470,4 @@ def _decompress_bounded_brotli(data: bytes, limit: int) -> bytes:
     _check_bomb(limit, len(out), "Brotli")
     return bytes(out)
 
+

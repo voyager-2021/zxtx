@@ -133,3 +133,4 @@ def encrypt_data_aes256_ctr_hmac(
     tag = h.finalize()
 
     return nonce, ciphertext, tag
+

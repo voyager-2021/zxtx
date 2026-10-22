@@ -135,3 +135,4 @@ def header_identity_digest(header: ZXTXHeader) -> bytes:
         + certificate
     )
     return hashlib.sha256(payload).digest()
+

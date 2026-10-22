@@ -16,3 +16,4 @@ header, body = parse_zxtx_header(data, private_key=private_key)
 
 decrypted_data = read_zxtx_file(header, body, private_key=private_key)
 print(decrypted_data)
+

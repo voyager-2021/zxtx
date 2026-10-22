@@ -185,3 +185,4 @@ def write_zxtx_file(
     header_bytes += struct.pack(">H", len(signature)) + signature
 
     return header_bytes + compressed_final
+

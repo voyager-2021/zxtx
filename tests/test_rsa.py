@@ -176,3 +176,4 @@ def test_encrypted_compressed_rsa(
 
     decrypted = read_zxtx_file(header, body, private_key=private_key)
     assert decrypted == original_data
+

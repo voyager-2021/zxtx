@@ -53,3 +53,4 @@ NONCE_SIZE_AEAD = 12
 
 #: Tag size of the v1 AES-256-CTR + HMAC body layout.
 CTR_HMAC_TAG_SIZE = 32
+

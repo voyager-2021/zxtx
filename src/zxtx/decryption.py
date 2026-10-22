@@ -97,3 +97,4 @@ def decrypt_data_aes256_ctr_hmac(
     plaintext = decryptor.update(ciphertext) + decryptor.finalize()
 
     return plaintext
+
