@@ -110,3 +110,4 @@ Readers MUST accept v1.0 files:
    then decompress with the declared original size as an output bound.
 5. Verify the SHA-256 hash and that the decompressed length matches the
    declared original size.
+
