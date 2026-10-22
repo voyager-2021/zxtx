@@ -526,3 +526,4 @@ def test_signature_verified_flag(temp_dir, keypair):
     fresh.read_bytes()
     assert fresh.signature_verified is False  # signed, no anchor provided
     fresh.close()
+
