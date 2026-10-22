@@ -1,0 +1,16 @@
+
+# Default owner for all files
+* @voyager-2021
+
+# Certificates
+/certificates/ @voyager-2021
+
+# Cryptographic examples
+/examples/ @voyager-2021
+
+# Tests and security infrastructure
+/tests/ @voyager-2021
+/.github/workflows/ @voyager-2021
+
+# Dependency and build configuration
+/pyproject.toml @voyager-2021

@@ -164,4 +164,12 @@ cython_debug/
 # Custom project specific
 *.pem
 *.zxtx
+
+# Local challenge / test artifacts (never commit these)
+flag.txt
+pass.txt
+hello.txt
+garbage.txt
+generate_flag.py
+secret.zxtx.bak
 .ruff_cache/

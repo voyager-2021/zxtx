@@ -52,11 +52,27 @@ Advanced Options
 
 - `cipher`: Select a cipher from `CIPHER_METHOD` enum for encryption/decryption.
 - `compression`: Select compression method from `COMPRESSION_METHOD` enum.
-- `certificate`: Optional bytes containing certificate data.
+- `certificate`: Optional bytes containing certificate data. Embedded when
+  writing; also used as a signature verification anchor when reading
+  (unless `public_key` is provided).
 - `private_key`: Private key object or bytes for decryption/signing.
-- `public_key`: Public key object or bytes for verification.
+- `public_key`: Public key object or bytes. Wraps the session key when
+  encrypting and acts as the signature verification anchor when reading.
 - `password`: Password bytes used for decrypting private keys.
 - `encoding`: Text encoding used for text read/write operations (default: "utf-8").
+- `create`: Treat the path as a fresh file; never parse existing contents
+  (used to overwrite invalid or foreign files).
+
+Signature verification
+----------------------
+
+Files written with a `private_key` are signed. When opening a file with
+`public_key` or `certificate`, the signature is verified before any
+content is returned: a modified file, a foreign-signed file, or an
+unsigned file raises a `ValueError` instead of silently returning data.
+Without a verification key, ZXTX cannot verify anything; use
+`ZXTXFileHandle.signature_verified` to introspect the state (`True` /
+`False` = signed but unverified / `None` = unsigned).
 
 Example with encryption and compression:
 
@@ -68,7 +84,7 @@ Example with encryption and compression:
     with open(
         "secure.zxtx",
         cipher=CIPHER_METHOD.AES256_CTR_HMAC,
-        compression=COMPRESSION_METHOD.ZSTD,
+        compression=COMPRESSION_METHOD.LZMA,
         private_key=b"---PRIVATE KEY BYTES---",
         public_key=b"---PUBLIC KEY BYTES---",
         password=b"mypassword"

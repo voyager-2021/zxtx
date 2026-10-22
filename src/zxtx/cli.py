@@ -1,5 +1,4 @@
 import argparse
-import re
 import sys
 from importlib.metadata import version
 from pathlib import Path
@@ -8,34 +7,10 @@ from typing import Optional
 from zxtx.constants import CIPHER_METHOD, COMPRESSION_METHOD
 from zxtx.dtypes import ZXTXBody, ZXTXData, ZXTXHeader
 from zxtx.highlevel import _open, open
-from zxtx.utils import error, note
-
-# Preserve original print for DummyConsole fallback
-_print = print
-
-# Regex patterns to clean style tags
-STYLE_TAG_PATTERN = re.compile(
-    r"""
-    (?<!\\)            # not preceded by backslash
-    (?<!\[)            # not a double opening bracket
-    \[/?[^\[\]]+?\]    # match [style] or [/]
-    (?!\])             # not a double closing bracket
-    """,
-    re.VERBOSE,
-)
-
-DOUBLE_BRACKET_PATTERN = re.compile(r"\[\[([^\[\]]+?)\]\]")
-
-
-def strip_style_tags(text: str) -> str:
-    text = DOUBLE_BRACKET_PATTERN.sub(r"[\1]", text)
-    text = STYLE_TAG_PATTERN.sub("", text)
-    return text.replace("\\[", "[").replace("\\]", "]")
-
+from zxtx.utils import error, note, warning
 
 try:
     from rich.pretty import pprint
-
 except ImportError:
     from pprint import pprint
 
@@ -64,6 +39,16 @@ def explain_error(e: Exception):
         note("This may be caused by the following reasons:")
         note("  - You've provided an invalid cipher method,")
         note("    this should be left to the parser to determine.")
+        note("  - The header identity data was tampered with (v1.1 files).")
+
+
+def _maybe_warn_unverified(zxtx_file) -> None:
+    state = zxtx_file.signature_verified
+    if state is False:
+        warning(
+            "File is signed, but no verification key was provided "
+            "(use --public-key or --certificate); signature NOT verified."
+        )
 
 
 def write_cmd(args):
@@ -80,6 +65,7 @@ def write_cmd(args):
                 certificate=get_bytes(args.certificate),
                 private_key=get_bytes(args.private_key),
                 public_key=get_bytes(args.public_key),
+                create=True,
             ) as output_file,
         ):
             output_file.write_bytes(input_file.read())
@@ -103,6 +89,7 @@ def read_cmd(args):
             compression=COMPRESSION_METHOD(args.compression),
         ) as file:
             data = file.read_bytes()
+            _maybe_warn_unverified(file)
 
         if args.output_path:
             Path(args.output_path).write_bytes(data)
@@ -130,11 +117,11 @@ def dump_cmd(args):
             cipher=CIPHER_METHOD(args.cipher),
             compression=COMPRESSION_METHOD(args.compression),
         ) as zxtx_file:
-            header: ZXTXHeader = zxtx_file._header
-            body: ZXTXBody = zxtx_file._body
-            data: bytes = zxtx_file._data
+            header: ZXTXHeader = zxtx_file.get_header()
+            body: ZXTXBody = zxtx_file.get_body()
+            data: bytes = zxtx_file.read_bytes()
 
-            zxtx_file._read()
+            _maybe_warn_unverified(zxtx_file)
 
             pprint(header)
             pprint(body)
@@ -162,7 +149,11 @@ def add_common_options(p):
         type=int,
         default=0,
         choices=[c.value for c in CIPHER_METHOD],
-        help="Cipher method (int).",
+        metavar="{0..3}",
+        help=(
+            "Cipher method id: 0=none (auto-detect when reading), "
+            "1=aes256_gcm, 2=chacha20_poly1305, 3=aes256_ctr_hmac."
+        ),
     )
     p.add_argument(
         "-z",
@@ -170,7 +161,11 @@ def add_common_options(p):
         type=int,
         default=0,
         choices=[c.value for c in COMPRESSION_METHOD],
-        help="Compression method (int).",
+        metavar="{0..3}",
+        help=(
+            "Compression method id: 0=none (auto-detect when reading), "
+            "1=zlib, 2=lzma, 3=brotli."
+        ),
     )
     p.add_argument(
         "-p",
@@ -178,9 +173,30 @@ def add_common_options(p):
         type=str,
         help="Password to decrypt private key (if needed).",
     )
-    p.add_argument("-k", "--public-key", type=str, help="Path to public key file.")
-    p.add_argument("-u", "--private-key", type=str, help="Path to private key file.")
-    p.add_argument("-C", "--certificate", type=str, help="Path to certificate file.")
+    p.add_argument(
+        "-k",
+        "--public-key",
+        type=str,
+        help=(
+            "Path to public key file. Used to wrap the session key when "
+            "encrypting and to verify signatures when reading."
+        ),
+    )
+    p.add_argument(
+        "-u",
+        "--private-key",
+        type=str,
+        help="Path to private key file (sign when writing, decrypt when reading).",
+    )
+    p.add_argument(
+        "-C",
+        "--certificate",
+        type=str,
+        help=(
+            "Path to X.509 certificate to embed when writing; also used as "
+            "a verification anchor when reading."
+        ),
+    )
 
     p.add_argument(
         "-V",

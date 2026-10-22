@@ -9,7 +9,7 @@ from cryptography.x509.oid import NameOID
 # private_key = ed25519.Ed25519PrivateKey.generate(
 private_key = rsa.generate_private_key(
     public_exponent=65537,
-    key_size=1024,
+    key_size=2048,
 )
 
 public_key = private_key.public_key()
@@ -51,10 +51,10 @@ cert = (
     .issuer_name(issuer)
     .public_key(private_key.public_key())
     .serial_number(x509.random_serial_number())
-    .not_valid_before(datetime.datetime.now(datetime.UTC))
+    .not_valid_before(datetime.datetime.now(datetime.timezone.utc))
     .not_valid_after(
         # Valid for 10 years
-        datetime.datetime.now(datetime.UTC)
+        datetime.datetime.now(datetime.timezone.utc)
         + datetime.timedelta(days=3650)
     )
     .add_extension(
