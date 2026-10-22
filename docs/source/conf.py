@@ -43,3 +43,4 @@ html_theme_options = {
     "collapse_navigation": False,
     "sticky_navigation": True,
 }
+

@@ -66,3 +66,4 @@ Notes:
   the stored-data bytes are signed as well.
 * CRC32 of the stored body is a transport-integrity convenience, not a
   security mechanism.
+

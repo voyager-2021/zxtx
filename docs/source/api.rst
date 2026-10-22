@@ -11,3 +11,4 @@ The high-level API provides simplified access to core functionalities of the **z
 It is designed for ease of use and quick integration.
 
 .. autofunction:: zxtx.highlevel.open
+

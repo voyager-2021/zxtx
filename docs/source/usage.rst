@@ -118,3 +118,4 @@ API Reference Summary
 ---
 
 For more details, refer to the full API documentation and the ZXTX specification file.
+
