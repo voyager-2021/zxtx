@@ -33,8 +33,8 @@ from zxtx.verifier import resolve_verification_key
 from zxtx.writer import write_zxtx_file
 
 
-original_size_offset = 4 + 2 + 16 + 2 + 8 + 8 + 8 + 32
-CRC32_OFFSET = 4 + 2 + 16 + 2 + 8 + 8 + 8 + 32
+CRC32_OFFSET = 4 + 2 + 16 + 2 + 8 + 8 + 8 + 32  # CRC32 field offset
+ORIGINAL_SIZE_OFFSET = 4 + 2 + 16 + 2  # original_size field offset
 
 
 def get_body_start(raw: bytes) -> int:
@@ -165,7 +165,7 @@ def test_tampered_header_fails_verification(keypair):
 
     tampered = bytearray(zxtx_bytes)
     # Flip the least-significant byte of original_size (signed by v1.1)
-    tampered[original_size_offset + 7] ^= 0x01
+    tampered[ORIGINAL_SIZE_OFFSET + 7] ^= 0x01
 
     with pytest.raises(ValueError, match="Signature verification failed"):
         parse_zxtx_header(bytes(tampered), verification_key=public_key)

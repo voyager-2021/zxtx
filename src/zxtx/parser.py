@@ -428,12 +428,8 @@ def _decompress_bounded_lzma(data: bytes, limit: int) -> bytes:
 
     try:
         while not decompressor.eof:
-            # Every iteration must either produce output, reach EOF, or
-            # raise — an iteration with no progress means truncation.
             budget = max(limit - len(out), 0) + 1
 
-            if decompressor.needs_input or source:
-                source = decompressor.unconsumed_tail or source
             piece = decompressor.decompress(source, max_length=budget)
             out += piece
             source = decompressor.unconsumed_tail
