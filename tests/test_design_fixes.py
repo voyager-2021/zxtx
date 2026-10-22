@@ -234,7 +234,7 @@ def test_wrong_key_fails_verification(keypair, tmp_path):
 
 
 def test_bad_verification_key_bytes_raise_privately(keypair):
-    _, pub_path, _ = keypair
+    priv_path, pub_path, _ = keypair
     private_key = load_private_key(priv_path.read_bytes())
 
     raw = write_zxtx_file(
@@ -519,7 +519,7 @@ def test_signature_verified_flag(temp_dir, keypair):
         private_key=private_key,
         public_key=load_public_key(pub_path.read_bytes()),
     )
-    handle.write(b"verifiable")
+    handle.write_bytes(b"verifiable")
     assert handle.signature_verified is True
     handle.close()
 

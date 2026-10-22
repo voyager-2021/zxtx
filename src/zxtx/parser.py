@@ -432,7 +432,9 @@ def _decompress_bounded_lzma(data: bytes, limit: int) -> bytes:
 
             piece = decompressor.decompress(source, max_length=budget)
             out += piece
-            source = decompressor.unconsumed_tail
+            # Get unconsumed input for next iteration (Python 3.3+ has unconsumed_tail,
+            # but fall back to manual tracking if not available)
+            source = getattr(decompressor, 'unconsumed_tail', b'')
 
             if not piece and not decompressor.eof:
                 raise ValueError("Invalid compressed data: truncated LZMA stream")
