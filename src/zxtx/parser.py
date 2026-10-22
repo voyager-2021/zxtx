@@ -12,8 +12,8 @@ from zxtx.constants import (
     COMPRESSION_METHOD,
     CTR_HMAC_TAG_SIZE,
     MAGIC_NUMBER,
-    NONCE_SIZE_AES_CTR,
     NONCE_SIZE_AEAD,
+    NONCE_SIZE_AES_CTR,
 )
 from zxtx.decryption import (
     decrypt_data_aes256_ctr_hmac,

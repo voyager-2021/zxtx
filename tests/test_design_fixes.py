@@ -32,7 +32,6 @@ from zxtx.signer import load_private_key, load_public_key, sign_data
 from zxtx.verifier import resolve_verification_key
 from zxtx.writer import write_zxtx_file
 
-
 CRC32_OFFSET = 4 + 2 + 16 + 2 + 8 + 8 + 8 + 32  # CRC32 field offset
 ORIGINAL_SIZE_OFFSET = 4 + 2 + 16 + 2  # original_size field offset
 
@@ -409,9 +408,9 @@ def test_legacy_v1_0_ctr_hmac_file_still_reads(keypair):
     )
     body = wrapped + nonce + ciphertext + tag
 
-    from datetime import datetime, timezone
     import hashlib
     import uuid
+    from datetime import datetime, timezone
 
     header = ZXTXHeader(
         version_major=1,
