@@ -3,8 +3,11 @@ import sys
 from importlib.metadata import version
 from pathlib import Path
 
+from cryptography.exceptions import InvalidSignature, InvalidTag
+
 from zxtx.constants import CIPHER_METHOD, COMPRESSION_METHOD
 from zxtx.dtypes import ZXTXBody, ZXTXData, ZXTXHeader
+from zxtx.errors import DecryptionError
 from zxtx.highlevel import _open, open
 from zxtx.utils import error, note, warning
 
@@ -25,20 +28,17 @@ def clean_error(e: Exception) -> str:
 
 
 def explain_error(e: Exception):
-    error_str = str(e)
-    error_repr = repr(e)
-
-    if error_str == "Decryption failed":
+    if isinstance(e, InvalidTag):
+        note("This may be caused by the following reasons:")
+        note("  - You've provided an invalid cipher method,")
+        note("    this should be left to the parser to determine.")
+        note("  - The header identity data was tampered with (v1.1 files).")
+    elif isinstance(e, (InvalidSignature, DecryptionError)):
         note("This may be caused by the following reasons:")
         note("  - The private key is incorrect.")
         note("  - The password of the private key is incorrect.")
         note("  - A wrong cipher or compression method is used,")
         note("    this should be left to the parser to determine.")
-    elif error_repr == "InvalidTag()":
-        note("This may be caused by the following reasons:")
-        note("  - You've provided an invalid cipher method,")
-        note("    this should be left to the parser to determine.")
-        note("  - The header identity data was tampered with (v1.1 files).")
 
 
 def _maybe_warn_unverified(zxtx_file) -> None:
@@ -128,14 +128,13 @@ def dump_cmd(args):
 
     except Exception as e:
         error_msg = clean_error(e)
-        error_repr = repr(e)
 
         if error_msg.strip():
             error(f"{error_msg}")
-        elif error_repr == "InvalidTag()":
+        elif isinstance(e, InvalidTag):
             error("[bold magenta]cryptography.exceptions.InvalidTag[/bold magenta]")
         else:
-            error(f"{error_repr}")
+            error(f"{e!r}")
 
         explain_error(e)
         sys.exit(1)

@@ -1,11 +1,11 @@
-import sys
-
+from cryptography.exceptions import InvalidSignature, InvalidTag
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM, ChaCha20Poly1305
 
 from zxtx.encryption import derive_ctr_hmac_keys
+from zxtx.errors import DecryptionError
 
 
 def decrypt_key_rsa(private_key, encrypted_key: bytes) -> bytes:
@@ -24,13 +24,9 @@ def decrypt_key_rsa(private_key, encrypted_key: bytes) -> bytes:
             ),
         )
     except ValueError as error:
-        (
+        if hasattr(error, "add_note"):
             error.add_note("Note: The private key may be invalid.")
-            if sys.version_info >= (3, 11)
-            else ...
-        )
-
-        raise error
+        raise DecryptionError(str(error)) from error
 
 
 def decrypt_data_aes_gcm(
@@ -42,7 +38,13 @@ def decrypt_data_aes_gcm(
     for v1.1 files) or authentication will fail.
     """
     aesgcm = AESGCM(key)
-    return aesgcm.decrypt(nonce, encrypted_data, aad)
+    try:
+        return aesgcm.decrypt(nonce, encrypted_data, aad)
+    except InvalidTag as error:
+        raise DecryptionError(
+            "Decryption failed: the AEAD authentication tag is invalid "
+            "(wrong key or tampered/corrupted data)."
+        ) from error
 
 
 def decrypt_data_chacha20(
@@ -54,7 +56,13 @@ def decrypt_data_chacha20(
     for v1.1 files) or authentication will fail.
     """
     chacha = ChaCha20Poly1305(key)
-    return chacha.decrypt(nonce, encrypted_data, aad)
+    try:
+        return chacha.decrypt(nonce, encrypted_data, aad)
+    except InvalidTag as error:
+        raise DecryptionError(
+            "Decryption failed: the AEAD authentication tag is invalid "
+            "(wrong key or tampered/corrupted data)."
+        ) from error
 
 
 def decrypt_data_aes256_ctr_hmac(
@@ -72,8 +80,8 @@ def decrypt_data_aes256_ctr_hmac(
       AES key and a 32-byte HMAC key, and the MAC covers ``nonce ||
       ciphertext`` only (``aad`` is ignored for legacy files).
 
-    ``h.verify`` raises ``InvalidSignature`` on a bad tag (verified *before*
-    any ciphertext is decrypted).
+    A bad tag raises ``DecryptionError`` (subclass of ``ValueError``;
+    verified *before* any ciphertext is decrypted).
     """
     if len(key) == 64:
         # Legacy v1.0 layout: key = enc_key || mac_key
@@ -90,7 +98,13 @@ def decrypt_data_aes256_ctr_hmac(
 
     h = hmac.HMAC(mac_key, hashes.SHA256())
     h.update((aad or b"") + nonce + ciphertext)
-    h.verify(tag)  # raises InvalidSignature if invalid
+    try:
+        h.verify(tag)  # raises InvalidSignature if invalid
+    except InvalidSignature as error:
+        raise DecryptionError(
+            "Decryption failed: the encrypt-then-MAC tag does not match "
+            "(wrong key or tampered/corrupted data)."
+        ) from error
 
     cipher = Cipher(algorithms.AES(enc_key), modes.CTR(nonce))
     decryptor = cipher.decryptor()

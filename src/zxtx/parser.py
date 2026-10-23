@@ -21,6 +21,7 @@ from zxtx.decryption import (
     decrypt_key_rsa,
 )
 from zxtx.dtypes import ZXTXBody, ZXTXHeader, header_identity_digest, pack_header
+from zxtx.errors import DecryptionError, FormatError, SignatureError
 from zxtx.utils import bits_to_bytes, is_encrypted
 from zxtx.verifier import resolve_verification_key, verify_signature
 
@@ -64,7 +65,7 @@ def parse_zxtx_header(
     data = bytes(data)
 
     if len(data) < _FIXED_HEADER_SIZE:
-        raise ValueError(
+        raise FormatError(
             f"Invalid ZXTX file: truncated header "
             f"({len(data)} bytes, need at least {_FIXED_HEADER_SIZE})"
         )
@@ -75,7 +76,7 @@ def parse_zxtx_header(
         nonlocal offset
         size = struct.calcsize(fmt)
         if offset + size > len(data):
-            raise ValueError("Invalid ZXTX file: truncated header")
+            raise FormatError("Invalid ZXTX file: truncated header")
         value = struct.unpack_from(fmt, data, offset)
         offset += size
         return value if len(value) > 1 else value[0]  # type: ignore
@@ -84,7 +85,7 @@ def parse_zxtx_header(
         nonlocal offset
         if offset + n > len(data):
             available = len(data) - offset
-            raise ValueError(
+            raise FormatError(
                 f"Invalid ZXTX file: truncated {what} "
                 f"(declared {n} bytes, {available} available)"
             )
@@ -95,7 +96,7 @@ def parse_zxtx_header(
     # Magic number
     magic = data[offset : offset + 4]
     if magic != MAGIC_NUMBER:
-        raise ValueError("Invalid ZXTX file: bad magic number")
+        raise FormatError("Invalid ZXTX file: bad magic number")
     offset += 4
 
     version_major = data[offset]
@@ -103,7 +104,7 @@ def parse_zxtx_header(
     offset += 2
 
     if version_major != 1:
-        raise ValueError(
+        raise FormatError(
             f"Unsupported format version: {version_major}.{version_minor} "
             f"(this reader supports major version 1)"
         )
@@ -121,13 +122,13 @@ def parse_zxtx_header(
         compression_method is not None
         and compression_method != header_compression_method
     ):
-        raise ValueError(
+        raise FormatError(
             f"Explicit compression override {compression_method!r} does not "
             f"match the file header ({header_compression_method!r}); leave "
             f"the override as None to auto-detect"
         )
     if cipher_method is not None and cipher_method != header_cipher_method:
-        raise ValueError(
+        raise FormatError(
             f"Explicit cipher override {cipher_method!r} does not match the "
             f"file header ({header_cipher_method!r}); leave the override as "
             f"None to auto-detect"
@@ -166,21 +167,21 @@ def parse_zxtx_header(
     # Body: exactly ``compressed_size`` bytes after the header
     available = len(data) - offset
     if available < compressed_size:
-        raise ValueError(
+        raise FormatError(
             f"Invalid ZXTX file: truncated body "
             f"(declared {compressed_size} bytes, {available} available)"
         )
     compressed_data = data[offset : offset + compressed_size]
 
     if zlib.crc32(compressed_data) != crc32:
-        raise ValueError("CRC32 mismatch: file may be corrupted or tampered")
+        raise FormatError("CRC32 mismatch: file may be corrupted or tampered")
 
     # Signature verification (only when a trust anchor was provided).
     # v1.1 signs ``packed_header || body``; v1.0 signed the header alone.
     if verification_key is not None:
         key = resolve_verification_key(verification_key)
         if not signature:
-            raise ValueError(
+            raise SignatureError(
                 "File is not signed, but a verification key was provided. "
                 "Re-open the file without public_key/certificate to read "
                 "unsigned files."
@@ -189,7 +190,7 @@ def parse_zxtx_header(
             compressed_data if _is_v1_1(header) else b""
         )
         if not verify_signature(key, signed_message, signature):
-            raise ValueError(
+            raise SignatureError(
                 "Signature verification failed: file may be modified or "
                 "signed by a different key"
             )
@@ -233,7 +234,7 @@ def parse_zxtx_header(
                 )
             )
             if len(compressed_data) < min_body:
-                raise ValueError(
+                raise FormatError(
                     f"Invalid ZXTX file: encrypted body too short for the "
                     f"RSA-{key_size * 8} key/nonce layout "
                     f"(declared compressed size {compressed_size}, need at "
@@ -253,7 +254,7 @@ def parse_zxtx_header(
                 encrypted_blob = compressed_data[key_size + nonce_size :]
                 tag = None
         case _:
-            raise ValueError(f"Invalid cipher method '{cipher_method}'")
+            raise FormatError(f"Invalid cipher method '{cipher_method}'")
 
     body = ZXTXBody(
         data=encrypted_blob, nonce=nonce, encrypted_key=encrypted_key, tag=tag
@@ -270,7 +271,7 @@ def _compression_enum(value: int) -> COMPRESSION_METHOD:
     try:
         return COMPRESSION_METHOD(value)
     except ValueError:
-        raise ValueError(
+        raise FormatError(
             f"Invalid compression method ID {value} in file header"
         ) from None
 
@@ -279,12 +280,12 @@ def _cipher_enum(value: int) -> CIPHER_METHOD:
     try:
         return CIPHER_METHOD(value)
     except ValueError:
-        raise ValueError(f"Invalid cipher method ID {value} in file header") from None
+        raise FormatError(f"Invalid cipher method ID {value} in file header") from None
 
 
 def _require_rsa_private_key(private_key) -> None:
     if not isinstance(private_key, rsa.RSAPrivateKey):
-        raise ValueError(
+        raise FormatError(
             "Encrypted ZXTX files wrap their session key with RSA; a "
             f"{type(private_key).__name__} private key cannot unwrap it. "
             "Provide the RSA private key of the file's recipient."
@@ -304,7 +305,7 @@ def read_zxtx_file(header: ZXTXHeader, body: ZXTXBody, private_key=None) -> byte
     decompression-bomb attacks on unverified files.
     """
     if is_encrypted(header) and private_key is None:
-        raise ValueError(
+        raise DecryptionError(
             "File appears to be encrypted, but no private key was provided."
         )
 
@@ -364,21 +365,21 @@ def read_zxtx_file(header: ZXTXHeader, body: ZXTXBody, private_key=None) -> byte
         )
 
     if len(decompressed) != header.original_size:
-        raise ValueError(
+        raise FormatError(
             f"Decompressed data size ({len(decompressed)}) does not match "
             f"the declared original size ({header.original_size}); file "
             f"may be corrupted or tampered"
         )
 
     if hashlib.sha256(decompressed).digest() != header.sha256_hash:
-        raise ValueError("SHA-256 hash mismatch: file may be corrupted or tampered")
+        raise FormatError("SHA-256 hash mismatch: file may be corrupted or tampered")
 
     return decompressed
 
 
 def _check_bomb(limit: int, produced: int, compressor: str) -> None:
     if produced > limit:
-        raise ValueError(
+        raise FormatError(
             f"Decompressed data size ({produced}) exceeds the declared "
             f"original size ({limit}) — potential {compressor} "
             f"decompression bomb"
@@ -388,7 +389,7 @@ def _check_bomb(limit: int, produced: int, compressor: str) -> None:
 def _decompress_bounded_zlib(data: bytes, limit: int) -> bytes:
     """Streamed zlib decompression that refuses output beyond ``limit``."""
     if limit < 0:
-        raise ValueError(f"Invalid declared original size: {limit}")
+        raise FormatError(f"Invalid declared original size: {limit}")
 
     decompressor = zlib.decompressobj()
     out = bytearray()
@@ -406,9 +407,9 @@ def _decompress_bounded_zlib(data: bytes, limit: int) -> bytes:
             pending = decompressor.unconsumed_tail
 
             if not piece and not pending and not decompressor.eof:
-                raise ValueError("Invalid compressed data: truncated zlib stream")
+                raise FormatError("Invalid compressed data: truncated zlib stream")
     except zlib.error as error:
-        raise ValueError(f"Invalid compressed data: {error}") from None
+        raise FormatError(f"Invalid compressed data: {error}") from None
 
     _check_bomb(limit, len(out), "zlib")
     return bytes(out)
@@ -417,7 +418,7 @@ def _decompress_bounded_zlib(data: bytes, limit: int) -> bytes:
 def _decompress_bounded_lzma(data: bytes, limit: int) -> bytes:
     """Streamed LZMA decompression that refuses output beyond ``limit``."""
     if limit < 0:
-        raise ValueError(f"Invalid declared original size: {limit}")
+        raise FormatError(f"Invalid declared original size: {limit}")
 
     decompressor = lzma.LZMADecompressor(lzma.FORMAT_AUTO)
     out = bytearray()
@@ -434,10 +435,10 @@ def _decompress_bounded_lzma(data: bytes, limit: int) -> bytes:
             source = getattr(decompressor, "unconsumed_tail", b"")
 
             if not piece and not decompressor.eof:
-                raise ValueError("Invalid compressed data: truncated LZMA stream")
+                raise FormatError("Invalid compressed data: truncated LZMA stream")
             _check_bomb(limit, len(out), "LZMA")
     except lzma.LZMAError as error:
-        raise ValueError(f"Invalid compressed data: {error}") from None
+        raise FormatError(f"Invalid compressed data: {error}") from None
 
     _check_bomb(limit, len(out), "LZMA")
     return bytes(out)
@@ -446,7 +447,7 @@ def _decompress_bounded_lzma(data: bytes, limit: int) -> bytes:
 def _decompress_bounded_brotli(data: bytes, limit: int) -> bytes:
     """Chunked Brotli decompression that refuses output beyond ``limit``."""
     if limit < 0:
-        raise ValueError(f"Invalid declared original size: {limit}")
+        raise FormatError(f"Invalid declared original size: {limit}")
 
     decompressor = brotli.Decompressor()
     out = bytearray()
@@ -459,10 +460,10 @@ def _decompress_bounded_brotli(data: bytes, limit: int) -> bytes:
             if decompressor.is_finished():
                 break
     except brotli.error as error:
-        raise ValueError(f"Invalid compressed data: {error}") from None
+        raise FormatError(f"Invalid compressed data: {error}") from None
 
     if not decompressor.is_finished():
-        raise ValueError("Invalid compressed data: truncated Brotli stream")
+        raise FormatError("Invalid compressed data: truncated Brotli stream")
 
     _check_bomb(limit, len(out), "Brotli")
     return bytes(out)
