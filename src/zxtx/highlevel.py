@@ -3,6 +3,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric.types import (
     PrivateKeyTypes,
     PublicKeyTypes,
@@ -53,6 +54,7 @@ class ZXTXFileHandle:
         certificate: bytes | None = None,
         private_key: PrivateKeyTypes | bytes | None = None,
         public_key: PublicKeyTypes | bytes | None = None,
+        decryption_key: PrivateKeyTypes | bytes | None = None,
         password: bytes | None = None,
         encoding: str = "utf-8",
         create: bool = False,
@@ -66,6 +68,15 @@ class ZXTXFileHandle:
                 as the signature verification anchor when reading (unless
                 ``public_key`` is provided).
             private_key / public_key: key objects or PEM bytes.
+                ``private_key`` is the *signing* key for writes.
+            decryption_key: RSA private key used to unwrap the session
+                key when reading an encrypted file (the "recipient"
+                side).  Defaults to ``private_key`` for back-compat with
+                the pre-dedicated-parameter behaviour where one RSA key
+                both signed and decrypted.  Pass this explicitly to read
+                a file that was signed with a *different* key (e.g. an
+                Ed25519 signing identity) without overloading
+                ``private_key``.
             password: password used to decrypt an encrypted private key.
             encoding: text encoding for text-level read/write.
             create: when True the existing file at ``path`` is never
@@ -85,6 +96,15 @@ class ZXTXFileHandle:
             if isinstance(private_key, bytes)
             else private_key
         )
+
+        if isinstance(decryption_key, bytes):
+            self._decryption_key = load_private_key(decryption_key, password=password)
+        elif decryption_key is None:
+            # Back-compat: the signing key doubles as the decryption key
+            # unless a dedicated one was supplied.
+            self._decryption_key = self._private_key
+        else:
+            self._decryption_key = decryption_key
 
         self._public_key = (
             load_public_key(public_key) if isinstance(public_key, bytes) else public_key
@@ -134,7 +154,7 @@ class ZXTXFileHandle:
 
         self._header, self._body = parse_zxtx_header(
             self._raw_data,
-            private_key=self._private_key,
+            private_key=self._decryption_key,
             compression_method=(
                 self._compression
                 if self._compression != COMPRESSION_METHOD.NONE
@@ -147,7 +167,7 @@ class ZXTXFileHandle:
             verification_key=self._verification_key if verify else None,
         )
 
-        self._data = read_zxtx_file(self._header, self._body, self._private_key)
+        self._data = read_zxtx_file(self._header, self._body, self._decryption_key)
         self._loaded = True
 
         # Deterministic verification state:
@@ -160,6 +180,29 @@ class ZXTXFileHandle:
             self._signature_verified = False
         else:
             self._signature_verified = None
+
+    def _can_roundtrip_locally(self) -> bool:
+        """
+        True when the freshly written body can be decrypted (and
+        therefore self-checked) by this handle.
+
+        Plain (cipher NONE) files always round trip.  Encrypted files
+        can only be self-checked when the *decryption* key is the RSA
+        key that matches the recipient public key — not merely "some
+        private key object was supplied" (a signing-only Ed25519 key, or
+        a third party's RSA key, must not abort a completed write).
+        """
+        if self._cipher == CIPHER_METHOD.NONE:
+            return True
+        if not (
+            isinstance(self._decryption_key, rsa.RSAPrivateKey)
+            and isinstance(self._public_key, rsa.RSAPublicKey)
+        ):
+            return False
+        return (
+            self._decryption_key.public_key().public_numbers()
+            == self._public_key.public_numbers()
+        )
 
     def _write_current(self) -> None:
         if self._closed:
@@ -176,7 +219,7 @@ class ZXTXFileHandle:
 
         _atomic_write(self._path, zxtx_bytes)
 
-        if self._cipher == CIPHER_METHOD.NONE or self._private_key is not None:
+        if self._can_roundtrip_locally():
             # Round-trip self-check whenever we can decrypt our own output.
             # Verify the freshly written signature when we hold both the
             # signing key and a verification anchor; without the signing
@@ -296,6 +339,7 @@ def open(
     certificate: bytes | None = None,
     private_key: PrivateKeyTypes | bytes | None = None,
     public_key: PublicKeyTypes | bytes | None = None,
+    decryption_key: PrivateKeyTypes | bytes | None = None,
     password: bytes | None = None,
     encoding: str = "utf-8",
     create: bool = False,
@@ -307,6 +351,10 @@ def open(
     When ``public_key`` or ``certificate`` is provided, the file's
     signature is verified before any content is returned, and reading
     fails closed on an invalid signature.
+
+    ``decryption_key`` is the RSA private key used to unwrap the session
+    key of an encrypted file; it defaults to ``private_key`` (which is
+    the signing key on writes).
     """
 
     return ZXTXFileHandle(
@@ -316,6 +364,7 @@ def open(
         certificate=certificate,
         private_key=private_key,
         public_key=public_key,
+        decryption_key=decryption_key,
         password=password,
         encoding=encoding,
         create=create,

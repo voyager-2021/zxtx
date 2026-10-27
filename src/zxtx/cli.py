@@ -64,6 +64,7 @@ def write_cmd(args):
                 certificate=get_bytes(args.certificate),
                 private_key=get_bytes(args.private_key),
                 public_key=get_bytes(args.public_key),
+                decryption_key=get_bytes(getattr(args, "decrypt_key", None)),
                 create=True,
             ) as output_file,
         ):
@@ -83,6 +84,7 @@ def read_cmd(args):
             password=password_bytes,
             public_key=get_bytes(args.public_key),
             private_key=get_bytes(args.private_key),
+            decryption_key=get_bytes(getattr(args, "decrypt_key", None)),
             certificate=get_bytes(args.certificate),
             cipher=CIPHER_METHOD(args.cipher),
             compression=COMPRESSION_METHOD(args.compression),
@@ -112,6 +114,7 @@ def dump_cmd(args):
             password=password_bytes,
             public_key=get_bytes(args.public_key),
             private_key=get_bytes(args.private_key),
+            decryption_key=get_bytes(getattr(args, "decrypt_key", None)),
             certificate=get_bytes(args.certificate),
             cipher=CIPHER_METHOD(args.cipher),
             compression=COMPRESSION_METHOD(args.compression),
@@ -185,6 +188,16 @@ def add_common_options(p):
         "--private-key",
         type=str,
         help="Path to private key file (sign when writing, decrypt when reading).",
+    )
+    p.add_argument(
+        "--decrypt-key",
+        type=str,
+        default=None,
+        help=(
+            "Path to an RSA private key used only to decrypt (the "
+            "recipient side). Use when the signing key (--private-key) "
+            "is not the decryption key. Falls back to --private-key."
+        ),
     )
     p.add_argument(
         "-C",
