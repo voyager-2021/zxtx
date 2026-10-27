@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
+from tests.vectors.generate_vectors import GOLDEN_PAYLOAD
 from zxtx.parser import parse_zxtx_header, read_zxtx_file
 from zxtx.signer import load_private_key, load_public_key
-from tests.vectors.generate_vectors import GOLDEN_PAYLOAD
 
 VECTORS = Path(__file__).parent / "vectors"
 KEYS_DIR = VECTORS / "keys"

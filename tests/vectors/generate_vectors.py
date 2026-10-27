@@ -23,8 +23,10 @@ import zlib
 from datetime import datetime, timezone
 from pathlib import Path
 
-from cryptography.hazmat.primitives import hashes, hmac as crypto_hmac
-from cryptography.hazmat.primitives.asymmetric import padding as asym_padding, rsa
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hmac as crypto_hmac
+from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.serialization import (
     Encoding,
@@ -34,9 +36,8 @@ from cryptography.hazmat.primitives.serialization import (
 )
 
 from zxtx.constants import CIPHER_METHOD, COMPRESSION_METHOD
-from zxtx.dtypes import FORMAT_VERSION, FORMAT_VERSION_V1
-from zxtx.dtypes import ZXTXHeader, pack_header
-from zxtx.signer import sign_data
+from zxtx.dtypes import FORMAT_VERSION, FORMAT_VERSION_V1, ZXTXHeader, pack_header
+from zxtx.signer import load_private_key, load_public_key, sign_data
 from zxtx.writer import write_zxtx_file
 
 # The exact plaintext every golden file encodes.  Kept deterministic so
@@ -82,8 +83,6 @@ def _write_key_files(recipient, signer) -> None:
 
 
 def _load_key_files():
-    from zxtx.signer import load_private_key, load_public_key
-
     return (
         load_private_key((KEYS_DIR / "recipient_private.pem").read_bytes()),
         load_public_key((KEYS_DIR / "recipient_public.pem").read_bytes()),
